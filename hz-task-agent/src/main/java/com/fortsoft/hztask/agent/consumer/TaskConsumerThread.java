@@ -44,7 +44,7 @@ public class TaskConsumerThread extends Thread {
     }
 
     @Override
-    public void start() {
+    public void run() {
         log.info("Started TaskConsumer thread");
 
         String localClusterId = clusterAgentService.getHzInstance().getCluster().getLocalMember().getUuid();

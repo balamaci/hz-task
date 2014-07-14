@@ -3,6 +3,7 @@ package com.fortsoft.hztask.master;
 import com.fortsoft.hztask.common.task.Task;
 import com.fortsoft.hztask.master.distribution.ClusterDistributionService;
 import com.fortsoft.hztask.master.listener.ClusterMembershipListener;
+import com.fortsoft.hztask.master.scheduler.UnassignedTaskReschedulerThread;
 import com.hazelcast.config.ClasspathXmlConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Serban Balamaci
@@ -25,6 +27,8 @@ public class ClusterMaster {
     private ClusterDistributionService clusterDistributionService;
     private HazelcastTopologyService hazelcastTopologyService;
 
+    private UnassignedTaskReschedulerThread unassignedTaskReschedulerThread;
+
     private volatile boolean shuttingDown = false;
 
 
@@ -34,13 +38,26 @@ public class ClusterMaster {
         hzInstance = Hazelcast.newHazelcastInstance(cfg);
         hazelcastTopologyService = new HazelcastTopologyService(hzInstance);
 
+        Set<Member> memberSet = hzInstance.getCluster().getMembers();
+        for(Member member : memberSet) {
+            if(! member.localMember()) {
+                hazelcastTopologyService.callbackWhenAgentReady(member, 0);
+            }
+        }
+
         hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(hazelcastTopologyService));
 
         clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService);
+        if(clusterDistributionService.getTaskCount() > 0) {
+
+        }
+
         ClusterMasterServiceImpl clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
                 clusterDistributionService);
 
         hzInstance.getConfig().getUserContext().put("clusterMasterService", clusterMasterService);
+        unassignedTaskReschedulerThread = new UnassignedTaskReschedulerThread(clusterMasterService, 10000);
+        unassignedTaskReschedulerThread.start();
     }
 
     public void submitTask(Task task) {
@@ -50,6 +67,7 @@ public class ClusterMaster {
     public void shutdown() {
         shuttingDown = true;
 
+        unassignedTaskReschedulerThread.interrupt();
         List<Member> members = hazelcastTopologyService.getAgents();
         for(Member member : members) {
             hazelcastTopologyService.sendShutdownMessageToMember(member);
@@ -59,7 +77,7 @@ public class ClusterMaster {
     }
 
     public int getActiveWorkersCount() {
-        return hazelcastTopologyService.getAgents().size();
+        return hazelcastTopologyService.getAgentsCount();
     }
 
 

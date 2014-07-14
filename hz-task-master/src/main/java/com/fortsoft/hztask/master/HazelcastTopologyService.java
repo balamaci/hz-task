@@ -11,6 +11,7 @@ import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -61,8 +62,12 @@ public class HazelcastTopologyService {
         agents.remove(member);
     }
 
-    public CopyOnWriteArrayList<Member> getAgents() {
+    public List<Member> getAgents() {
         return agents;
+    }
+
+    public int getAgentsCount() {
+        return agents.size();
     }
 
     public Member getMaster() {

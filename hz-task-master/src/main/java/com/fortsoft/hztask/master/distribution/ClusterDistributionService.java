@@ -67,6 +67,14 @@ public class ClusterDistributionService {
         submitDistributedTask(oldTask);
     }
 
+    public int getTaskCount() {
+        return tasks.size();
+    }
+
+    public int getAgentsCount() {
+        return hazelcastTopologyService.getAgentsCount();
+    }
+
     public void setRoutingStrategy(RoutingStrategy routingStrategy) {
         this.routingStrategy = routingStrategy;
     }

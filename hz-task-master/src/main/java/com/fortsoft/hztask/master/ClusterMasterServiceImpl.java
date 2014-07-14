@@ -65,6 +65,17 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     }
 
     public void rescheduleUnassignedTasks() {
+
+        if(clusterDistributionService.getTaskCount() == 0) {
+            log.info("No tasks to redistribute");
+            return;
+        }
+
+        if(clusterDistributionService.getAgentsCount() ==0) {
+            log.info("No Agents to redistribute task to");
+            return;
+        }
+
         Predicate selectionPredicate = Predicates.equal("clusterInstanceUuid", "-1");
 
         PagingPredicate pagingPredicate = new PagingPredicate(selectionPredicate, 100);
