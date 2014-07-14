@@ -19,7 +19,7 @@ import java.util.concurrent.Callable;
  *
  * @author Serban Balamaci
  */
-public abstract class TaskProcessor<T extends Serializable> implements Serializable {
+public abstract class TaskProcessor<T extends Serializable> {
 
     private Task task;
     private TaskKey taskKey;

@@ -7,7 +7,7 @@
 
     <parent>
         <artifactId>hz-task-parent</artifactId>
-        <groupId>com.forsoft</groupId>
+        <groupId>com.fortsoft</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
@@ -22,7 +22,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.forsoft</groupId>
+            <groupId>com.fortsoft</groupId>
             <artifactId>hz-task-common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>

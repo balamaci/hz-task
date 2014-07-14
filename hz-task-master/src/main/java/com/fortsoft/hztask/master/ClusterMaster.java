@@ -3,6 +3,7 @@ package com.fortsoft.hztask.master;
 import com.fortsoft.hztask.common.task.Task;
 import com.fortsoft.hztask.common.task.TaskKey;
 import com.fortsoft.hztask.master.listener.ClusterMembershipListener;
+import com.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
 import com.fortsoft.hztask.master.router.RoutingStrategy;
 import com.google.common.base.Optional;
 import com.hazelcast.config.ClasspathXmlConfig;
@@ -39,7 +40,7 @@ public class ClusterMaster {
 
         hzInstance = Hazelcast.newHazelcastInstance(cfg);
         hazelcastTopologyService = new HazelcastTopologyService(hzInstance);
-//        routingStrategy = new RoundRobinRoutingStrategy(hazelcastTopologyService);
+        routingStrategy = new RoundRobinRoutingStrategy(hazelcastTopologyService);
 
         hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(hazelcastTopologyService));
 

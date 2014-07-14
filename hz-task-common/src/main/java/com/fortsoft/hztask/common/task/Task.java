@@ -14,8 +14,6 @@ public abstract class Task implements Serializable {
 
     private int nrOfTries;
 
-    private Long delay;
-
     public Task() {
         id = UUID.randomUUID().toString();
     }
@@ -40,15 +38,4 @@ public abstract class Task implements Serializable {
         this.nrOfTries = nrOfTries;
     }
 
-    public void setDelayAfterProcess(long delayMs) {
-        this.delay = delayMs;
-    }
-
-    public void setDelayBeforeProcess(long delayMs) {
-        this.delay = - delayMs;
-    }
-
-    public Long getDelay() {
-        return delay;
-    }
 }
