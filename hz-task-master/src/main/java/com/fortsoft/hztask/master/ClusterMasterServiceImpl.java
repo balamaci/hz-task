@@ -34,6 +34,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     @Override
     public void handleFinishedTask(TaskKey taskKey, Serializable response) {
+        log.info("Task with id {} finished", taskKey.getTaskId());
         Task task = clusterDistributionService.removeTask(taskKey);
 
         Optional<FinishedTaskProcessor> finishedTaskProcessor = getProcessorForTaskClass(task);
@@ -44,6 +45,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     @Override
     public void handleFailedTask(TaskKey taskKey, Throwable exception) {
+        log.info("Task with id {} failed", taskKey.getTaskId());
         Task task = clusterDistributionService.removeTask(taskKey);
 
         Optional<FinishedTaskProcessor> finishedTaskProcessor = getProcessorForTaskClass(task);

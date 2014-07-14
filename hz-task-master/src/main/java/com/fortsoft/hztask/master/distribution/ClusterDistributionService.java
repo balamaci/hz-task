@@ -16,6 +16,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
+ * Handles task distribution to the Agents and general tasks management
+ *
  * @author Serban Balamaci
  */
 public class ClusterDistributionService {
@@ -40,8 +42,7 @@ public class ClusterDistributionService {
         if(memberToRunOn.isPresent()) {
             taskKey = new TaskKey(memberToRunOn.get().getUuid(), task.getId(), task.getClass().getName());
         } else {
-            taskKey = new TaskKey(hazelcastTopologyService.getLocalMember().getUuid(),
-                    task.getId(), task.getClass().getName());
+            taskKey = new TaskKey("-1", task.getId(), task.getClass().getName());
         }
 
         task.setClusterInstanceUuid(taskKey.getPartitionKey());

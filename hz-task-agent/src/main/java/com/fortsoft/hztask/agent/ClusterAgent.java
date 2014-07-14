@@ -16,7 +16,6 @@
 
 package com.fortsoft.hztask.agent;
 
-import com.hazelcast.config.ClasspathXmlConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -30,12 +29,10 @@ public class ClusterAgent  {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterAgent.class);
 
-    public ClusterAgent(AgentConfig config, String configXmlFileName) {
+    public ClusterAgent(AgentConfig config, Config hzConfig) {
         log.info("Starting agent ...");
 
-        Config cfg = new ClasspathXmlConfig(configXmlFileName);
-
-        HazelcastInstance hzInstance = Hazelcast.newHazelcastInstance(cfg);
+        HazelcastInstance hzInstance = Hazelcast.newHazelcastInstance(hzConfig);
 
         log.info("Starting Agent with ClusterID {}", hzInstance.getCluster().getLocalMember().getUuid());
 
