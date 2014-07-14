@@ -1,8 +1,8 @@
 package com.fortsoft.hztask.agent.listener;
 
-import com.fortsoft.hztask.ClusterAgent;
-import com.fortsoft.hztask.TaskProcessor;
-import com.fortsoft.hztask.TaskProcessorFactory;
+import com.fortsoft.hztask.agent.ClusterAgent;
+import com.fortsoft.hztask.agent.processor.TaskProcessor;
+import com.fortsoft.hztask.agent.processor.TaskProcessorFactory;
 import com.fortsoft.hztask.common.task.Task;
 import com.hazelcast.core.EntryEvent;
 import com.hazelcast.core.EntryListener;

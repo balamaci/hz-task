@@ -1,5 +1,6 @@
-package com.fortsoft.hztask;
+package com.fortsoft.hztask.agent.processor;
 
+import com.fortsoft.hztask.agent.ClusterAgentServiceImpl;
 import com.fortsoft.hztask.common.task.Task;
 import com.fortsoft.hztask.common.task.TaskKey;
 import com.google.common.util.concurrent.FutureCallback;
@@ -14,6 +15,8 @@ import java.util.concurrent.Callable;
 /**
  * Base class for processors of task to implement
  *
+ * Override this class and inject from the Factory the dependencies
+ *
  * @author Serban Balamaci
  */
 public abstract class TaskProcessor<T extends Serializable> implements Serializable {
@@ -21,14 +24,16 @@ public abstract class TaskProcessor<T extends Serializable> implements Serializa
     private Task task;
     private TaskKey taskKey;
 
-    private ClusterAgent clusterAgent;
+    private ClusterAgentServiceImpl clusterAgentService;
 
     private static final Logger log = LoggerFactory.getLogger(TaskProcessor.class);
 
-
-
+    /**
+     * Internal method that handles the processing the task
+     * @return
+     */
     public final ListenableFuture<T> doWork() {
-        ListenableFuture<T> resultFuture = clusterAgent.getTaskExecutorService().submit(new Callable<T>() {
+        ListenableFuture<T> resultFuture = clusterAgentService.getTaskExecutorService().submit(new Callable<T>() {
 
             @Override
             public T call() throws Exception {
@@ -53,14 +58,19 @@ public abstract class TaskProcessor<T extends Serializable> implements Serializa
         return resultFuture;
     }
 
-    public abstract T process(Object task);
+    /**
+     * Method to override and implement what the task is supposed to do
+     * @param task Task that holds the data
+     * @return processing result
+     */
+    public abstract T process(Task task);
 
     private void onComplete(T result) {
-        clusterAgent.getTaskConsumerThread().notifyTaskFinished(taskKey, result);
+        clusterAgentService.getTaskConsumerThread().notifyTaskFinished(taskKey, result);
     }
 
     private void onFail(Throwable throwable) {
-        clusterAgent.getTaskConsumerThread().notifyTaskFailed(taskKey, throwable);
+        clusterAgentService.getTaskConsumerThread().notifyTaskFailed(taskKey, throwable);
     }
 
     public void setTaskKey(TaskKey taskKey) {
@@ -71,7 +81,7 @@ public abstract class TaskProcessor<T extends Serializable> implements Serializa
         this.task = task;
     }
 
-    public void setClusterAgent(ClusterAgent clusterAgent) {
-        this.clusterAgent = clusterAgent;
+    public void setClusterAgentService(ClusterAgentServiceImpl clusterAgentService) {
+        this.clusterAgentService = clusterAgentService;
     }
 }

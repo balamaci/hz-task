@@ -30,6 +30,8 @@ public class ClusterMembershipListener implements MembershipListener {
     public void memberRemoved(MembershipEvent membershipEvent) {
         LOG.info("Member disconnected {}", membershipEvent.getMember());
         hazelcastTopologyService.removeAgent(membershipEvent.getMember());
+
+        //TODO start a thread to reschedule the tasks to different agents if the agent does not reconnect
     }
 
     @Override

@@ -1,9 +1,9 @@
 package com.fortsoft.hztask.master;
 
-import com.fortsoft.hztask.cluster.IClusterMasterService;
 import com.fortsoft.hztask.common.task.Task;
 import com.fortsoft.hztask.common.task.TaskKey;
 import com.fortsoft.hztask.master.listener.ClusterMembershipListener;
+import com.fortsoft.hztask.master.processor.FinishedTaskProcessorFactory;
 import com.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
 import com.fortsoft.hztask.master.router.RoutingStrategy;
 import com.google.common.base.Optional;
@@ -16,12 +16,12 @@ import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
+import java.util.Map;
 
 /**
  * @author Serban Balamaci
  */
-public class ClusterMaster implements IClusterMasterService {
+public class ClusterMaster {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterMaster.class);
 
@@ -31,10 +31,11 @@ public class ClusterMaster implements IClusterMasterService {
 
     private HazelcastTopologyService hazelcastTopologyService;
 
+
     private IMap<TaskKey, Task> tasks;
 
 
-    public ClusterMaster(String configXmlFileName) {
+    public ClusterMaster(Map<Class, FinishedTaskProcessorFactory> finishedTaskProcessors, String configXmlFileName) {
         Config cfg = new ClasspathXmlConfig(configXmlFileName);
 
         hzInstance = Hazelcast.newHazelcastInstance(cfg);
@@ -42,9 +43,14 @@ public class ClusterMaster implements IClusterMasterService {
         routingStrategy = new RoundRobinRoutingStrategy(hazelcastTopologyService);
 
         hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(hazelcastTopologyService));
-        hzInstance.getConfig().getUserContext().put("clusterMasterService", this);
 
         tasks = hzInstance.getMap("tasks");
+        ClusterMasterServiceImpl clusterMasterService = new ClusterMasterServiceImpl();
+        clusterMasterService.setFinishedTaskProcessors(finishedTaskProcessors);
+        clusterMasterService.setTasks(tasks);
+
+        hzInstance.getConfig().getUserContext().put("clusterMasterService", clusterMasterService);
+
     }
 
     public void submitDistributedTask(Task task) {
@@ -58,7 +64,7 @@ public class ClusterMaster implements IClusterMasterService {
         }
 
         task.setClusterInstanceUuid(taskKey.getPartitionKey());
-        log.info("Adding task={} to Map for CLID {}", task.getId(), task.getClusterInstanceUuid());
+        log.info("Adding task={} to Map for AgentID {}", task.getId(), task.getClusterInstanceUuid());
         tasks.put(taskKey, task);
         log.info("Added task to Map", task.getId());
     }
@@ -67,13 +73,5 @@ public class ClusterMaster implements IClusterMasterService {
         return hazelcastTopologyService.getAgents().size();
     }
 
-    @Override
-    public void handleFinishedTask(TaskKey taskKey, Serializable response) {
-        tasks.remove(taskKey);
-    }
 
-    @Override
-    public void handleFailedTask(TaskKey taskKey, Throwable exception) {
-        tasks.remove(taskKey);
-    }
 }

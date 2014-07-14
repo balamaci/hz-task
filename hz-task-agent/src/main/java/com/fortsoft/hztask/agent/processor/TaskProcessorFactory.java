@@ -1,4 +1,4 @@
-package com.fortsoft.hztask;
+package com.fortsoft.hztask.agent.processor;
 
 /**
  * @author Serban Balamaci
