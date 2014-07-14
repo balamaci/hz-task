@@ -108,4 +108,11 @@ public class HazelcastTopologyService {
         }
     }
 
+    public Member getLocalMember() {
+        return hzInstance.getCluster().getLocalMember();
+    }
+
+    public HazelcastInstance getHzInstance() {
+        return hzInstance;
+    }
 }

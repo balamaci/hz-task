@@ -14,8 +14,14 @@ public abstract class Task implements Serializable {
 
     private int nrOfTries;
 
+    //higher is bigger priority
+    private int priority = 0;
+
+    private long creationDate;
+
     public Task() {
         id = UUID.randomUUID().toString();
+        creationDate = System.currentTimeMillis();
     }
 
     public String getId() {
@@ -38,4 +44,19 @@ public abstract class Task implements Serializable {
         this.nrOfTries = nrOfTries;
     }
 
+    public int getPriority() {
+        return priority;
+    }
+
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+
+    public long getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(long creationDate) {
+        this.creationDate = creationDate;
+    }
 }
