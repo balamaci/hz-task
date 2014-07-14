@@ -8,22 +8,25 @@ import com.fortsoft.hztask.master.processor.FinishedTaskProcessorFactory;
 import com.hazelcast.core.IMap;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * @author Serban Balamaci
  */
 public class ClusterMasterServiceImpl implements IClusterMasterService {
 
-    private Map<Class, FinishedTaskProcessorFactory> finishedTaskProcessors;
+    private MasterConfig masterConfig;
 
     private IMap<TaskKey, Task> tasks;
+
+    public ClusterMasterServiceImpl(MasterConfig masterConfig) {
+        this.masterConfig = masterConfig;
+    }
 
     @Override
     public void handleFinishedTask(TaskKey taskKey, Serializable response) {
         Task task = tasks.remove(taskKey);
-        FinishedTaskProcessorFactory finishedTaskProcessorFactory =
-                finishedTaskProcessors.get(task.getClass());
+        FinishedTaskProcessorFactory finishedTaskProcessorFactory = masterConfig.
+                getFinishedTaskProcessors().get(task.getClass());
 
         if(finishedTaskProcessorFactory != null) {
             FinishedTaskProcessor finishedTaskProcessor = finishedTaskProcessorFactory.getObject();
@@ -34,17 +37,13 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     @Override
     public void handleFailedTask(TaskKey taskKey, Throwable exception) {
         Task task = tasks.remove(taskKey);
-        FinishedTaskProcessorFactory finishedTaskProcessorFactory =
-                finishedTaskProcessors.get(task.getClass());
+        FinishedTaskProcessorFactory finishedTaskProcessorFactory = masterConfig.
+                getFinishedTaskProcessors().get(task.getClass());
 
         if(finishedTaskProcessorFactory != null) {
             FinishedTaskProcessor finishedTaskProcessor = finishedTaskProcessorFactory.getObject();
             finishedTaskProcessor.processFailed(task, exception);
         }
-    }
-
-    public void setFinishedTaskProcessors(Map<Class, FinishedTaskProcessorFactory> finishedTaskProcessors) {
-        this.finishedTaskProcessors = finishedTaskProcessors;
     }
 
     public void setTasks(IMap<TaskKey, Task> tasks) {

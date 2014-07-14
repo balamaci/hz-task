@@ -36,6 +36,8 @@ public class TaskConsumerThread extends Thread {
 
     private static final Logger log = LoggerFactory.getLogger(TaskConsumerThread.class);
 
+    private volatile boolean shuttingDown = false;
+
     public TaskConsumerThread(ClusterAgentServiceImpl clusterAgentService) {
         this.clusterAgentService = clusterAgentService;
         runningTasks = new LinkedBlockingQueue<>(clusterAgentService.getMaxRunningTasks());
@@ -50,6 +52,9 @@ public class TaskConsumerThread extends Thread {
         IMap<TaskKey, Task> tasksMap = clusterAgentService.getHzInstance().getMap("tasks");
 
         while (true) {
+            if(shuttingDown) {
+                break;
+            }
             Set<TaskKey> eligibleTasks = tasksMap.keySet(new SqlPredicate("clusterInstanceUuid=" + localClusterId));
             boolean foundTask = false;
 
@@ -67,7 +72,7 @@ public class TaskConsumerThread extends Thread {
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
-                    break;
+                    //nothing, probably shuttingdown
                 }
             }
         }
@@ -114,4 +119,7 @@ public class TaskConsumerThread extends Thread {
         runningTasks.remove(taskKey);
     }
 
+    public void setShuttingDown(boolean shuttingDown) {
+        this.shuttingDown = shuttingDown;
+    }
 }

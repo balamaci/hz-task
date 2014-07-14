@@ -50,6 +50,14 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
         }
     }
 
+    @Override
+    public void shutdown() {
+        taskConsumerThread.setShuttingDown(true);
+        taskConsumerThread.interrupt();
+
+        hzInstance.shutdown();
+    }
+
     private void startTaskConsumer() {
         taskConsumerThread = new TaskConsumerThread(this);
 

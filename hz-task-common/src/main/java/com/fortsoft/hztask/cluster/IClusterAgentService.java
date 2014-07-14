@@ -9,4 +9,6 @@ public interface IClusterAgentService {
 
     public void announceMaster(String masterUuid);
 
+    public void shutdown();
+
 }

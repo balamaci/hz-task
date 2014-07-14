@@ -3,6 +3,7 @@ package com.fortsoft.hztask.master;
 import com.fortsoft.hztask.op.AbstractClusterOp;
 import com.fortsoft.hztask.op.agent.AnnounceMasterMemberOp;
 import com.fortsoft.hztask.op.agent.AskAgentReadyOp;
+import com.fortsoft.hztask.op.agent.ShutdownAgentOp;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
@@ -28,6 +29,8 @@ public class HazelcastTopologyService {
 
     private static final Logger log = LoggerFactory.getLogger(HazelcastTopologyService.class);
 
+    private static final int MAX_ASK_READY_ATTEMPTS = 5;
+
     public HazelcastTopologyService(HazelcastInstance hzInstance) {
         this.hzInstance = hzInstance;
         communicationExecutorService = hzInstance.getExecutorService("coms");
@@ -35,6 +38,12 @@ public class HazelcastTopologyService {
     }
 
     public void callbackWhenAgentReady(Member member, int attempt) {
+        if(attempt > MAX_ASK_READY_ATTEMPTS) {
+            log.error("NON_JOIN_READY_AFTER_MANY_ATTEMPTS: After {} attempts the member {} " +
+                    "did not respond affirmatively", attempt);
+            return;
+        }
+
         try {
             communicationExecutorService.submitToMember(new AskAgentReadyOp(),
                     member, new MemberReadyCallback(member, this, attempt));
@@ -60,6 +69,10 @@ public class HazelcastTopologyService {
         return hzInstance.getCluster().getLocalMember();
     }
 
+    public Future sendShutdownMessageToMember(Member member) {
+        return communicationExecutorService.submitToMember(new ShutdownAgentOp(), member);
+    }
+
     private class MemberReadyCallback implements ExecutionCallback<Boolean> {
 
         private Member member;
@@ -75,7 +88,7 @@ public class HazelcastTopologyService {
         @Override
         public void onResponse(Boolean response) {
             if(response) {
-                log.info("New cluster agent {} is active", member.getUuid());
+                log.info("NEW_JOIN New cluster agent {} is active", member.getUuid());
                 sendMessageToMember(member, new AnnounceMasterMemberOp(hazelcastTopologyService.getMaster()));
                 hazelcastTopologyService.getAgents().add(member);
             } else {
@@ -91,7 +104,7 @@ public class HazelcastTopologyService {
 
         @Override
         public void onFailure(Throwable t) {
-            t.printStackTrace();
+            log.error("EXCEPTION_ON_JOIN Agent responded with failure", t);
         }
     }
 

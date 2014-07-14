@@ -31,11 +31,13 @@ public class ClusterAgent  {
     private static final Logger log = LoggerFactory.getLogger(ClusterAgent.class);
 
     public ClusterAgent(AgentConfig config, String configXmlFileName) {
-        log.info("Starting agent");
+        log.info("Starting agent ...");
 
         Config cfg = new ClasspathXmlConfig(configXmlFileName);
 
         HazelcastInstance hzInstance = Hazelcast.newHazelcastInstance(cfg);
+
+        log.info("Starting Agent with ClusterID {}", hzInstance.getCluster().getLocalMember().getUuid());
 
         ClusterAgentServiceImpl clusterAgentService = new ClusterAgentServiceImpl(config);
         clusterAgentService.setHzInstance(hzInstance);
