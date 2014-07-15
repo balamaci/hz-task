@@ -1,6 +1,6 @@
 package ro.fortsoft.hztask.master;
 
-import ro.fortsoft.hztask.master.processor.TaskCompletionListenerFactory;
+import ro.fortsoft.hztask.master.listener.TaskCompletionListenerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
