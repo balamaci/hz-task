@@ -22,7 +22,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.fortsoft</groupId>
+            <groupId>ro.fortsoft</groupId>
             <artifactId>hz-task-common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
@@ -38,23 +38,4 @@
 
     </dependencies>
 
-    <build>
-        <resources>
-            <resource>
-                <filtering>false</filtering>
-                <directory>src/main/resources</directory>
-            </resource>
-            <resource>
-                <filtering>false</filtering>
-                <directory>src/main/java</directory>
-                <includes>
-                    <include>**</include>
-                </includes>
-                <excludes>
-                    <exclude>**/*.java</exclude>
-                </excludes>
-            </resource>
-        </resources>
-
-    </build>
 </project>
