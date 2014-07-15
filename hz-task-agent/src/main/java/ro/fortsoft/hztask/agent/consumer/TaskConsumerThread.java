@@ -5,6 +5,7 @@ import ro.fortsoft.hztask.agent.processor.TaskProcessor;
 import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
 import ro.fortsoft.hztask.callback.TaskFailedOp;
 import ro.fortsoft.hztask.callback.TaskFinishedOp;
+import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import com.hazelcast.core.IExecutorService;
@@ -49,7 +50,7 @@ public class TaskConsumerThread extends Thread {
 
         String localClusterId = clusterAgentService.getHzInstance().getCluster().getLocalMember().getUuid();
 
-        IMap<TaskKey, Task> tasksMap = clusterAgentService.getHzInstance().getMap("tasks");
+        IMap<TaskKey, Task> tasksMap = clusterAgentService.getHzInstance().getMap(HzKeysConstants.TASKS_MAP);
 
         while (true) {
             if(shuttingDown) {
@@ -95,7 +96,8 @@ public class TaskConsumerThread extends Thread {
     }
 
     public void notifyTaskFinished(TaskKey taskKey, Serializable result) {
-        IExecutorService executorService = clusterAgentService.getHzInstance().getExecutorService("finishedTasks");
+        IExecutorService executorService = clusterAgentService.getHzInstance().
+                getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_FINISHED_TASKS);
 
         log.info("Notifing Master of task {} finished succesfully", taskKey.getTaskId());
         Future masterNotified = executorService.submitToMember(new TaskFinishedOp(taskKey, result),
@@ -112,7 +114,8 @@ public class TaskConsumerThread extends Thread {
     }
 
     public void notifyTaskFailed(TaskKey taskKey, Throwable exception) {
-        IExecutorService executorService = clusterAgentService.getHzInstance().getExecutorService("finishedTasks");
+        IExecutorService executorService = clusterAgentService.getHzInstance().
+                getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_FINISHED_TASKS);
 
         executorService.submitToMember(new TaskFailedOp(taskKey, exception), clusterAgentService.getMaster());
 

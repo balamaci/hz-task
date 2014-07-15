@@ -21,6 +21,8 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.hztask.common.HzKeysConstants;
+import ro.fortsoft.hztask.common.MemberType;
 
 /**
  * @author Serban Balamaci
@@ -33,13 +35,15 @@ public class ClusterAgent  {
         log.info("Starting agent ...");
 
         HazelcastInstance hzInstance = Hazelcast.newHazelcastInstance(hzConfig);
+        hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.AGENT);
 
         log.info("Starting Agent with ClusterID {}", hzInstance.getCluster().getLocalMember().getUuid());
 
         ClusterAgentServiceImpl clusterAgentService = new ClusterAgentServiceImpl(config);
         clusterAgentService.setHzInstance(hzInstance);
 
-        hzInstance.getConfig().getUserContext().put("clusterAgentService", clusterAgentService);
+        hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_AGENT_SERVICE,
+                clusterAgentService);
 //        tasks.addEntryListener(new TaskEntryListener(this),
 //                new SqlPredicate("clusterInstanceUuid=" + localUUID), true);
     }

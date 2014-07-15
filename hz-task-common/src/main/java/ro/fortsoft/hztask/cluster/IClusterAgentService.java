@@ -11,7 +11,9 @@ public interface IClusterAgentService {
 
     public boolean isActive();
 
-    public void announceMaster(String masterUuid);
+    public boolean setMaster(String masterUuid);
+
+    public void startWork();
 
     public void shutdown();
 

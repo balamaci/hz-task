@@ -1,16 +1,17 @@
 package ro.fortsoft.hztask.agent;
 
-import ro.fortsoft.hztask.agent.consumer.TaskConsumerThread;
-import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
-import ro.fortsoft.hztask.cluster.IClusterAgentService;
-import ro.fortsoft.hztask.util.ClusterUtil;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
+import ro.fortsoft.hztask.agent.consumer.TaskConsumerThread;
+import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
+import ro.fortsoft.hztask.cluster.IClusterAgentService;
+import ro.fortsoft.hztask.util.ClusterUtil;
 
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Serban Balamaci
@@ -24,6 +25,8 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
     private AgentConfig config;
 
     private Member master;
+
+    private ReentrantReadWriteLock lockMaster = new ReentrantReadWriteLock();
 
     /**
      * Pool of threads that handle the
@@ -43,17 +46,46 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
     }
 
     @Override
-    public void announceMaster(String masterUuid) {
-        master = ClusterUtil.findMemberWithUuid(hzInstance, masterUuid).get();
-        if (taskConsumerThread == null) {
+    public boolean setMaster(String masterUuid) {
+        lockMaster.writeLock().lock();
+
+        try {
+            if(master != null) {
+                return false;
+            }
+            master = ClusterUtil.findMemberWithUuid(hzInstance, masterUuid).get();
+
+            return true;
+        } finally {
+            lockMaster.writeLock().unlock();
+        }
+    }
+
+    public void handleMasterLeft() {
+        lockMaster.writeLock().lock();
+        try {
+            master = null;
+            stopWork();
+        } finally {
+            lockMaster.writeLock().unlock();
+        }
+    }
+
+    public void stopWork() {
+        taskConsumerThread.setShuttingDown(true);
+        taskConsumerThread.interrupt();
+    }
+
+    @Override
+    public void startWork() {
+        if (taskConsumerThread == null || ! taskConsumerThread.isAlive()) {
             startTaskConsumer();
         }
     }
 
     @Override
     public void shutdown() {
-        taskConsumerThread.setShuttingDown(true);
-        taskConsumerThread.interrupt();
+        stopWork();
 
         hzInstance.shutdown();
     }
@@ -85,7 +117,12 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
     }
 
     public Member getMaster() {
-        return master;
+        lockMaster.readLock().lock();
+        try {
+            return master;
+        } finally {
+            lockMaster.readLock().unlock();
+        }
     }
 
     public int getMaxRunningTasks() {

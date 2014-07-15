@@ -6,19 +6,19 @@ import com.hazelcast.core.Member;
 /**
  * @author Serban Balamaci
  */
-public class AnnounceMasterMemberOp extends AbstractAgentOp {
+public class AnnounceMasterAndSignalStartWorkOp extends AbstractAgentOp {
 
     private String masterUuid;
 
-    public AnnounceMasterMemberOp(Member master) {
+    public AnnounceMasterAndSignalStartWorkOp(Member master) {
         this.masterUuid = master.getUuid();
     }
 
     @Override
     public Object call() throws Exception {
-        System.out.println("Calling announce member " + masterUuid);
         try {
-            getClusterAgentService().announceMaster(masterUuid);
+            getClusterAgentService().setMaster(masterUuid);
+            getClusterAgentService().startWork();
         } catch (Exception e) {
             e.printStackTrace();
         }

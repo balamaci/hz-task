@@ -73,7 +73,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
             return;
         }
 
-        if(clusterDistributionService.getAgentsCount() ==0) {
+        if(clusterDistributionService.getAgentsCount() == 0) {
             log.info("No Agents to redistribute task to");
             return;
         }

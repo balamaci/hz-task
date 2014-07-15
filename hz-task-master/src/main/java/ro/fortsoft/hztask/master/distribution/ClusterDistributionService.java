@@ -1,5 +1,6 @@
 package ro.fortsoft.hztask.master.distribution;
 
+import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.HazelcastTopologyService;
@@ -33,11 +34,12 @@ public class ClusterDistributionService {
     public ClusterDistributionService(HazelcastTopologyService hazelcastTopologyService) {
         this.hazelcastTopologyService = hazelcastTopologyService;
         this.routingStrategy = new RoundRobinRoutingStrategy(hazelcastTopologyService);
-        this.tasks = hazelcastTopologyService.getHzInstance().getMap("tasks");
+        this.tasks = hazelcastTopologyService.getHzInstance().getMap(HzKeysConstants.TASKS_MAP);
     }
 
     public void submitDistributedTask(Task task) {
         Optional<Member> memberToRunOn = routingStrategy.getMemberToRunOn();
+
         TaskKey taskKey;
         if(memberToRunOn.isPresent()) {
             taskKey = new TaskKey(memberToRunOn.get().getUuid(), task.getId(), task.getClass().getName());

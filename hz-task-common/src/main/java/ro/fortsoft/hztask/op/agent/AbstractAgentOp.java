@@ -1,6 +1,7 @@
 package ro.fortsoft.hztask.op.agent;
 
 import ro.fortsoft.hztask.cluster.IClusterAgentService;
+import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.op.AbstractClusterOp;
 
 /**
@@ -9,8 +10,8 @@ import ro.fortsoft.hztask.op.AbstractClusterOp;
 public abstract class AbstractAgentOp<T> extends AbstractClusterOp<T> {
 
     public IClusterAgentService getClusterAgentService() {
-        return  (IClusterAgentService) getHzInstance().getConfig().
-                getUserContext().get("clusterAgentService");
+        return  (IClusterAgentService) getHzInstance().getUserContext().
+                get(HzKeysConstants.USER_CONTEXT_CLUSTER_AGENT_SERVICE);
     }
 
 }

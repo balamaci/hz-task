@@ -1,20 +1,26 @@
 package ro.fortsoft.hztask.master;
 
-import ro.fortsoft.hztask.op.AbstractClusterOp;
-import ro.fortsoft.hztask.op.agent.AnnounceMasterMemberOp;
-import ro.fortsoft.hztask.op.agent.AskAgentReadyOp;
-import ro.fortsoft.hztask.op.agent.ShutdownAgentOp;
+import com.google.common.collect.Lists;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.hztask.common.HzKeysConstants;
+import ro.fortsoft.hztask.common.MemberType;
+import ro.fortsoft.hztask.op.AbstractClusterOp;
+import ro.fortsoft.hztask.op.GetMemberTypeClusterOp;
+import ro.fortsoft.hztask.op.agent.AnnounceMasterAndSignalStartWorkOp;
+import ro.fortsoft.hztask.op.agent.AskAgentReadyOp;
+import ro.fortsoft.hztask.op.agent.ShutdownAgentOp;
 
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
@@ -34,8 +40,36 @@ public class HazelcastTopologyService {
 
     public HazelcastTopologyService(HazelcastInstance hzInstance) {
         this.hzInstance = hzInstance;
-        communicationExecutorService = hzInstance.getExecutorService("coms");
+        communicationExecutorService = hzInstance.getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_COMS);
         agents = new CopyOnWriteArrayList<>();
+    }
+
+    private Future<MemberType> isMemberMaster(Member member) {
+        return communicationExecutorService.submitToMember(new GetMemberTypeClusterOp(), member);
+    }
+
+    public boolean isMasterAmongClusterMembers() {
+        Set<Member> members = hzInstance.getCluster().getMembers();
+        List<Future<MemberType>> futures = Lists.newArrayList();
+
+        for(Member member : members) {
+            if(! member.localMember()) {
+                futures.add(isMemberMaster(member));
+            }
+        }
+
+        for(Future<MemberType> future : futures) {
+            try {
+                MemberType memberType = future.get();
+                if(MemberType.MASTER.equals(memberType)) {
+                    return true;
+                }
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return false;
     }
 
     public void callbackWhenAgentReady(Member member, int attempt) {
@@ -46,8 +80,9 @@ public class HazelcastTopologyService {
         }
 
         try {
+            log.info("Asking {} if READY attempt {}", member, attempt);
             communicationExecutorService.submitToMember(new AskAgentReadyOp(),
-                    member, new MemberReadyCallback(member, this, attempt));
+                    member, new MemberReadyCallback(member, attempt));
         } catch (Exception e) {
             log.error("Error sending AskAgentReadyOp", e);
         }
@@ -82,25 +117,24 @@ public class HazelcastTopologyService {
 
         private Member member;
         private int attempt;
-        private HazelcastTopologyService hazelcastTopologyService;
 
-        private MemberReadyCallback(Member member, HazelcastTopologyService hazelcastTopologyService, int attempt) {
+        private MemberReadyCallback(Member member, int attempt) {
             this.member = member;
             this.attempt = attempt;
-            this.hazelcastTopologyService = hazelcastTopologyService;
         }
 
         @Override
         public void onResponse(Boolean response) {
             if(response) {
-                log.info("NEW_JOIN New cluster agent {} is active", member.getUuid());
-                sendMessageToMember(member, new AnnounceMasterMemberOp(hazelcastTopologyService.getMaster()));
-                hazelcastTopologyService.getAgents().add(member);
+                log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
+                sendMessageToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()));
+
+                getAgents().add(member);
             } else {
                 TimerTask timerTask = new TimerTask() {
                     @Override
                     public void run() {
-                        hazelcastTopologyService.callbackWhenAgentReady(member, attempt ++);
+                        callbackWhenAgentReady(member, ++ attempt);
                     }
                 };
                 new Timer().schedule(timerTask, 5000);
