@@ -17,7 +17,7 @@ public class PriorityAndOldestTaskComparator implements Comparator<Map.Entry>, S
         Task task2 = (Task) e2.getValue();
 
         if(task1.getPriority() == task2.getPriority()) {
-            return task1.getCreationDate() <= task2.getCreationDate() ? -1 : 1;
+            return task1.getInternalCounter() <= task2.getInternalCounter() ? -1 : 1;
         }
 
         return task1.getPriority() < task2.getPriority() ? -1 : 1;
