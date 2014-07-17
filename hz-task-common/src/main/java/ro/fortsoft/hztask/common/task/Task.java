@@ -1,5 +1,7 @@
 package ro.fortsoft.hztask.common.task;
 
+import com.google.common.base.Objects;
+
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -68,5 +70,15 @@ public abstract class Task<I, O> implements Serializable {
 
     public void setInternalCounter(long internalCounter) {
         this.internalCounter = internalCounter;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("id", id)
+                .add("nrOfTries", nrOfTries)
+                .add("priority", priority)
+                .add("creationDate", creationDate)
+                .toString();
     }
 }

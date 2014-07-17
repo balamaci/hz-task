@@ -34,8 +34,8 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     }
 
     @Override
-    public void handleFinishedTask(TaskKey taskKey, Serializable response) {
-        log.info("Task with id {} finished", taskKey.getTaskId());
+    public void handleFinishedTask(TaskKey taskKey, Serializable response, String agentUuid) {
+        log.info("Task with id {} finished on {}", taskKey.getTaskId(), agentUuid);
         Task task = clusterDistributionService.removeTask(taskKey);
         if(task == null) {
             log.error("Could not find task with id {}", taskKey.getTaskId());
@@ -49,8 +49,8 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     }
 
     @Override
-    public void handleFailedTask(TaskKey taskKey, Throwable exception) {
-        log.info("Task with id {} failed", taskKey.getTaskId());
+    public void handleFailedTask(TaskKey taskKey, Throwable exception, String agentUuid) {
+        log.info("Task with id {} failed on {}", taskKey.getTaskId(), agentUuid);
         Task task = clusterDistributionService.removeTask(taskKey);
         if(task == null) {
             log.error("Could not find task with id {}", taskKey.getTaskId());

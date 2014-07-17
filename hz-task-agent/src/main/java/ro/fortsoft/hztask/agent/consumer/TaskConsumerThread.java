@@ -1,5 +1,6 @@
 package ro.fortsoft.hztask.agent.consumer;
 
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.SqlPredicate;
@@ -13,6 +14,7 @@ import ro.fortsoft.hztask.callback.TaskFinishedOp;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
+import ro.fortsoft.hztask.util.ClusterUtil;
 
 import java.io.Serializable;
 import java.util.Set;
@@ -93,11 +95,13 @@ public class TaskConsumerThread extends Thread {
     }
 
     public void notifyTaskFinished(TaskKey taskKey, Serializable result) {
-        IExecutorService executorService = clusterAgentService.getHzInstance().
-                getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_FINISHED_TASKS);
+        HazelcastInstance hzInstance = clusterAgentService.getHzInstance();
+        IExecutorService executorService = hzInstance.getExecutorService(HzKeysConstants.
+                EXECUTOR_SERVICE_FINISHED_TASKS);
 
         log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
-        Future masterNotified = executorService.submitToMember(new TaskFinishedOp(taskKey, result),
+        Future masterNotified = executorService.submitToMember(new TaskFinishedOp(taskKey, result,
+                        ClusterUtil.getLocalMemberUuid(hzInstance)),
                 clusterAgentService.getMaster());
         try {
             masterNotified.get();
@@ -111,10 +115,20 @@ public class TaskConsumerThread extends Thread {
     }
 
     public void notifyTaskFailed(TaskKey taskKey, Throwable exception) {
-        IExecutorService executorService = clusterAgentService.getHzInstance().
-                getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_FINISHED_TASKS);
+        HazelcastInstance hzInstance = clusterAgentService.getHzInstance();
+        IExecutorService executorService = hzInstance.getExecutorService(HzKeysConstants.
+                EXECUTOR_SERVICE_FINISHED_TASKS);
 
-        executorService.submitToMember(new TaskFailedOp(taskKey, exception), clusterAgentService.getMaster());
+        Future masterNotified = executorService.submitToMember(new TaskFailedOp(taskKey, exception,
+                ClusterUtil.getLocalMemberUuid(hzInstance)),
+                clusterAgentService.getMaster());
+        try {
+            masterNotified.get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            log.error("Task {}, failed to notify Master of it's status", e);
+        }
 
         runningTasks.remove(taskKey);
     }

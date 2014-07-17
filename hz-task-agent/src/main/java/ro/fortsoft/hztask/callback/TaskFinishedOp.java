@@ -11,18 +11,19 @@ import java.io.Serializable;
 public class TaskFinishedOp extends AbstractMasterOp {
 
     private final TaskKey id;
-
     private final Serializable response;
+    private final String agentUuid;
 
-    public TaskFinishedOp(TaskKey id, Serializable response) {
+    public TaskFinishedOp(TaskKey id, Serializable response, String agentUuid) {
         this.id = id;
         this.response = response;
+        this.agentUuid = agentUuid;
     }
 
 
     @Override
     public Void call() throws Exception {
-        getClusterMasterService().handleFinishedTask(id, response);
+        getClusterMasterService().handleFinishedTask(id, response, agentUuid);
         return null;
     }
 }

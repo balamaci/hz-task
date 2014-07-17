@@ -22,4 +22,8 @@ public class ClusterUtil {
         return Optional.absent();
     }
 
+    public static String getLocalMemberUuid(HazelcastInstance hzInstance) {
+        return hzInstance.getCluster().getLocalMember().getUuid();
+    }
+
 }

@@ -56,7 +56,7 @@ public class ClusterDistributionService {
 
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
-        log.info("Adding task={} to Map for AgentID {}", task.getId(), task.getClusterInstanceUuid());
+        log.info("Adding task={} to Map for AgentID {}", task, task.getClusterInstanceUuid());
         tasks.put(taskKey, task);
         log.info("Added task to Map", task.getId());
     }
