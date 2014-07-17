@@ -74,15 +74,17 @@ public class TaskConsumerThread extends Thread {
                         new PriorityAndOldestTaskComparator(), clusterAgentService.getMaxRunningTasks() + 1);
 
                 Set<TaskKey> eligibleTasks = tasksMap.keySet(pagingPredicate);
-                System.out.println("Returned " + eligibleTasks.size() + " remaining " + runningTasks.remainingCapacity());
+//                log.info("Returned " + eligibleTasks.size() + " remaining " + runningTasks.remainingCapacity());
                 boolean foundTask = false;
 
                 for (TaskKey taskKey : eligibleTasks) {
                     if (!runningTasks.contains(taskKey)) {
                         Task task = tasksMap.get(taskKey);
-                        foundTask = true;
-                        log.info("Starting processing of task {}", task);
-                        startProcessingTask(taskKey, task);
+                        if(task != null) { //The query ran before the task was removed from the map
+                            foundTask = true;
+                            log.info("Starting processing of task {}", task);
+                            startProcessingTask(taskKey, task);
+                        }
                     }
                 }
                 if (!foundTask) {
