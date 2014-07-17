@@ -8,13 +8,13 @@ import java.io.Serializable;
 /**
  * @author Serban Balamaci
  */
-public class TaskFinishedOp extends AbstractMasterOp {
+public class NotifyMasterTaskFinishedOp extends AbstractMasterOp {
 
     private final TaskKey id;
     private final Serializable response;
     private final String agentUuid;
 
-    public TaskFinishedOp(TaskKey id, Serializable response, String agentUuid) {
+    public NotifyMasterTaskFinishedOp(TaskKey id, Serializable response, String agentUuid) {
         this.id = id;
         this.response = response;
         this.agentUuid = agentUuid;

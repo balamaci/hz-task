@@ -6,13 +6,13 @@ import ro.fortsoft.hztask.op.master.AbstractMasterOp;
 /**
  * @author Serban Balamaci
  */
-public class TaskFailedOp extends AbstractMasterOp {
+public class NotifyMasterTaskFailedOp extends AbstractMasterOp {
 
     private final TaskKey id;
     private final Throwable exception;
     private final String agentUuid;
 
-    public TaskFailedOp(TaskKey id, Throwable exception, String agentUuid) {
+    public NotifyMasterTaskFailedOp(TaskKey id, Throwable exception, String agentUuid) {
         this.id = id;
         this.exception = exception;
         this.agentUuid = agentUuid;

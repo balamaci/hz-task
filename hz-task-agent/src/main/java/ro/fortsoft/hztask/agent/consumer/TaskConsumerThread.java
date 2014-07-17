@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.agent.ClusterAgentServiceImpl;
 import ro.fortsoft.hztask.agent.processor.TaskProcessor;
 import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
-import ro.fortsoft.hztask.callback.TaskFailedOp;
-import ro.fortsoft.hztask.callback.TaskFinishedOp;
+import ro.fortsoft.hztask.callback.NotifyMasterTaskFailedOp;
+import ro.fortsoft.hztask.callback.NotifyMasterTaskFinishedOp;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
@@ -100,7 +100,7 @@ public class TaskConsumerThread extends Thread {
                 EXECUTOR_SERVICE_FINISHED_TASKS);
 
         log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
-        Future masterNotified = executorService.submitToMember(new TaskFinishedOp(taskKey, result,
+        Future masterNotified = executorService.submitToMember(new NotifyMasterTaskFinishedOp(taskKey, result,
                         ClusterUtil.getLocalMemberUuid(hzInstance)),
                 clusterAgentService.getMaster());
         try {
@@ -119,7 +119,7 @@ public class TaskConsumerThread extends Thread {
         IExecutorService executorService = hzInstance.getExecutorService(HzKeysConstants.
                 EXECUTOR_SERVICE_FINISHED_TASKS);
 
-        Future masterNotified = executorService.submitToMember(new TaskFailedOp(taskKey, exception,
+        Future masterNotified = executorService.submitToMember(new NotifyMasterTaskFailedOp(taskKey, exception,
                 ClusterUtil.getLocalMemberUuid(hzInstance)),
                 clusterAgentService.getMaster());
         try {
