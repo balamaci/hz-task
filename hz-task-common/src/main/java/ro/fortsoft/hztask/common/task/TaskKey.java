@@ -1,5 +1,7 @@
 package ro.fortsoft.hztask.common.task;
 
+import com.google.common.base.Objects;
+
 import java.io.Serializable;
 
 /**
@@ -32,5 +34,12 @@ public class TaskKey implements Serializable {
     @Override
     public int hashCode() {
         return taskId.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(this)
+                .add("taskId", taskId)
+                .toString();
     }
 }

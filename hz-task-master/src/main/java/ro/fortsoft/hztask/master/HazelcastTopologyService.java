@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
-import ro.fortsoft.hztask.master.event.event.AgentJoinedEvent;
+import ro.fortsoft.hztask.master.event.membership.AgentJoinedEvent;
 import ro.fortsoft.hztask.op.AbstractClusterOp;
 import ro.fortsoft.hztask.op.GetMemberTypeClusterOp;
 import ro.fortsoft.hztask.op.agent.AnnounceMasterAndSignalStartWorkOp;

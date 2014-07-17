@@ -4,9 +4,9 @@ import com.google.common.eventbus.Subscribe;
 import com.hazelcast.core.Member;
 import ro.fortsoft.hztask.master.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
-import ro.fortsoft.hztask.master.event.event.AgentJoinedEvent;
-import ro.fortsoft.hztask.master.event.event.AgentLeftEvent;
-import ro.fortsoft.hztask.master.event.event.MemberJoinedEvent;
+import ro.fortsoft.hztask.master.event.membership.AgentJoinedEvent;
+import ro.fortsoft.hztask.master.event.membership.AgentLeftEvent;
+import ro.fortsoft.hztask.master.event.membership.MemberJoinedEvent;
 import ro.fortsoft.hztask.master.scheduler.AgentLeftTaskRescheduler;
 
 /**

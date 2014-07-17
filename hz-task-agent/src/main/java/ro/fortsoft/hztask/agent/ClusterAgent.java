@@ -16,14 +16,19 @@
 
 package ro.fortsoft.hztask.agent;
 
+import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.hztask.agent.event.task.TaskEventSubscriber;
 import ro.fortsoft.hztask.agent.listener.ClusterMembershipListener;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
+
+import java.util.concurrent.Executors;
 
 /**
  * @author Serban Balamaci
@@ -31,6 +36,10 @@ import ro.fortsoft.hztask.common.MemberType;
 public class ClusterAgent  {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterAgent.class);
+
+    private EventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
+
+    private ClusterAgentService clusterAgentService;
 
     public ClusterAgent(AgentConfig config, Config hzConfig) {
         log.info("Starting agent ...");
@@ -40,12 +49,18 @@ public class ClusterAgent  {
 
         log.info("Starting Agent with ClusterID {}", hzInstance.getCluster().getLocalMember().getUuid());
 
-        ClusterAgentServiceImpl clusterAgentService = new ClusterAgentServiceImpl(config);
+        clusterAgentService = new ClusterAgentService(config, eventBus);
         clusterAgentService.setHzInstance(hzInstance);
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_AGENT_SERVICE,
                 clusterAgentService);
         hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(clusterAgentService));
+
+        registerEventListeners();
+    }
+
+    private void registerEventListeners() {
+        eventBus.register(new TaskEventSubscriber(clusterAgentService));
     }
 
 }

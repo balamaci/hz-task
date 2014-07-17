@@ -3,16 +3,16 @@ package ro.fortsoft.hztask.agent.listener;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
-import ro.fortsoft.hztask.agent.ClusterAgentServiceImpl;
+import ro.fortsoft.hztask.agent.ClusterAgentService;
 
 /**
  * @author Serban Balamaci
  */
 public class ClusterMembershipListener implements MembershipListener {
 
-    private ClusterAgentServiceImpl clusterAgentService;
+    private ClusterAgentService clusterAgentService;
 
-    public ClusterMembershipListener(ClusterAgentServiceImpl clusterAgentService) {
+    public ClusterMembershipListener(ClusterAgentService clusterAgentService) {
         this.clusterAgentService = clusterAgentService;
     }
 

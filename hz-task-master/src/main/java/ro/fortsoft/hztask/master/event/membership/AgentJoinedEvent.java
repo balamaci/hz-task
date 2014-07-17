@@ -1,15 +1,15 @@
-package ro.fortsoft.hztask.master.event.event;
+package ro.fortsoft.hztask.master.event.membership;
 
 import com.hazelcast.core.Member;
 
 /**
  * @author Serban Balamaci
  */
-public class MemberJoinedEvent {
+public class AgentJoinedEvent {
 
     private final Member member;
 
-    public MemberJoinedEvent(Member member) {
+    public AgentJoinedEvent(Member member) {
         this.member = member;
     }
 

@@ -3,17 +3,21 @@ package ro.fortsoft.hztask.agent.consumer;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.PagingPredicate;
+import com.hazelcast.query.Predicate;
 import com.hazelcast.query.SqlPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.hztask.agent.ClusterAgentServiceImpl;
+import ro.fortsoft.hztask.agent.ClusterAgentService;
 import ro.fortsoft.hztask.agent.processor.TaskProcessor;
 import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
+import ro.fortsoft.hztask.agent.service.TaskExecutionService;
 import ro.fortsoft.hztask.callback.NotifyMasterTaskFailedOp;
 import ro.fortsoft.hztask.callback.NotifyMasterTaskFinishedOp;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
+import ro.fortsoft.hztask.comparator.PriorityAndOldestTaskComparator;
 import ro.fortsoft.hztask.util.ClusterUtil;
 
 import java.io.Serializable;
@@ -35,15 +39,22 @@ public class TaskConsumerThread extends Thread {
 
     private BlockingQueue<TaskKey> runningTasks;
 
-    private ClusterAgentServiceImpl clusterAgentService;
+    private ClusterAgentService clusterAgentService;
 
     private static final Logger log = LoggerFactory.getLogger(TaskConsumerThread.class);
 
     private volatile boolean shuttingDown = false;
 
-    public TaskConsumerThread(ClusterAgentServiceImpl clusterAgentService) {
+    private IMap<TaskKey, Task> tasksMap;
+
+    private TaskExecutionService taskExecutionService;
+
+
+    public TaskConsumerThread(ClusterAgentService clusterAgentService) {
         this.clusterAgentService = clusterAgentService;
         runningTasks = new LinkedBlockingQueue<>(clusterAgentService.getMaxRunningTasks());
+        tasksMap = clusterAgentService.getHzInstance().getMap(HzKeysConstants.TASKS_MAP);
+        taskExecutionService = new TaskExecutionService(clusterAgentService.getEventBus());
     }
 
     @Override
@@ -52,22 +63,25 @@ public class TaskConsumerThread extends Thread {
 
         String localClusterId = clusterAgentService.getHzInstance().getCluster().getLocalMember().getUuid();
 
-        IMap<TaskKey, Task> tasksMap = clusterAgentService.getHzInstance().getMap(HzKeysConstants.TASKS_MAP);
-
         while (true) {
             if(shuttingDown) {
                 break;
             }
             try {
-                Set<TaskKey> eligibleTasks = tasksMap.keySet(new SqlPredicate("clusterInstanceUuid=" + localClusterId));
+                Predicate selectPredicate = new SqlPredicate("clusterInstanceUuid=" + localClusterId);
+
+                PagingPredicate pagingPredicate = new PagingPredicate(selectPredicate,
+                        new PriorityAndOldestTaskComparator(), clusterAgentService.getMaxRunningTasks() + 1);
+
+                Set<TaskKey> eligibleTasks = tasksMap.keySet(pagingPredicate);
+                System.out.println("Returned " + eligibleTasks.size() + " remaining " + runningTasks.remainingCapacity());
                 boolean foundTask = false;
 
                 for (TaskKey taskKey : eligibleTasks) {
                     if (!runningTasks.contains(taskKey)) {
                         Task task = tasksMap.get(taskKey);
                         foundTask = true;
-
-                        log.info("Work, work...");
+                        log.info("Starting processing of task {}", task);
                         startProcessingTask(taskKey, task);
                     }
                 }
@@ -88,10 +102,7 @@ public class TaskConsumerThread extends Thread {
         TaskProcessorFactory factory = clusterAgentService.getProcessorRegistry().get(task.getClass());
         TaskProcessor taskProcessor = factory.getObject();
 
-        taskProcessor.setTaskKey(taskKey);
-        taskProcessor.setTask(task);
-        taskProcessor.setClusterAgentService(clusterAgentService);
-        taskProcessor.doWork();
+        taskExecutionService.executeTask(taskProcessor, taskKey, task);
     }
 
     public void notifyTaskFinished(TaskKey taskKey, Serializable result) {

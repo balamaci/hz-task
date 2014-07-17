@@ -1,7 +1,6 @@
 package ro.fortsoft.hztask.agent;
 
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import org.slf4j.Logger;
@@ -12,13 +11,12 @@ import ro.fortsoft.hztask.cluster.IClusterAgentService;
 import ro.fortsoft.hztask.util.ClusterUtil;
 
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author Serban Balamaci
  */
-public class ClusterAgentServiceImpl implements IClusterAgentService {
+public class ClusterAgentService implements IClusterAgentService {
 
     private TaskConsumerThread taskConsumerThread;
 
@@ -30,18 +28,13 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
 
     private ReentrantReadWriteLock lockMaster = new ReentrantReadWriteLock();
 
-    /**
-     * Pool of threads that handle the
-     * task processing
-     */
-    private ListeningExecutorService taskExecutorService;
+    private EventBus eventBus;
 
-    private static final Logger log = LoggerFactory.getLogger(ClusterAgentServiceImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(ClusterAgentService.class);
 
-    public ClusterAgentServiceImpl(AgentConfig agentConfig) {
+    public ClusterAgentService(AgentConfig agentConfig, EventBus eventBus) {
         this.config = agentConfig;
-        taskExecutorService = MoreExecutors.
-                listeningDecorator(Executors.newFixedThreadPool(agentConfig.getMaxRunningTasks()));
+        this.eventBus = eventBus;
     }
 
     @Override
@@ -117,10 +110,6 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
         return config.getProcessorRegistry();
     }
 
-    public ListeningExecutorService getTaskExecutorService() {
-        return taskExecutorService;
-    }
-
     public Member getMaster() {
         lockMaster.readLock().lock();
         try {
@@ -132,5 +121,9 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
 
     public int getMaxRunningTasks() {
         return config.getMaxRunningTasks();
+    }
+
+    public EventBus getEventBus() {
+        return eventBus;
     }
 }

@@ -6,8 +6,8 @@ import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.hztask.master.event.event.AgentLeftEvent;
-import ro.fortsoft.hztask.master.event.event.MemberJoinedEvent;
+import ro.fortsoft.hztask.master.event.membership.AgentLeftEvent;
+import ro.fortsoft.hztask.master.event.membership.MemberJoinedEvent;
 
 /**
  * @author Serban Balamaci
