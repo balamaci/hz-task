@@ -1,11 +1,13 @@
 package ro.fortsoft.hztask.master.listener;
 
-import ro.fortsoft.hztask.master.HazelcastTopologyService;
+import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.hztask.master.event.event.AgentLeftEvent;
+import ro.fortsoft.hztask.master.event.event.MemberJoinedEvent;
 
 /**
  * @author Serban Balamaci
@@ -14,24 +16,22 @@ public class ClusterMembershipListener implements MembershipListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClusterMembershipListener.class);
 
-    private HazelcastTopologyService hazelcastTopologyService;
+    private EventBus eventBus;
 
-    public ClusterMembershipListener(HazelcastTopologyService hazelcastTopologyService) {
-        this.hazelcastTopologyService = hazelcastTopologyService;
+    public ClusterMembershipListener(EventBus eventBus) {
+        this.eventBus = eventBus;
     }
 
     @Override
     public void memberAdded(MembershipEvent membershipEvent) {
         LOG.info("New member joined {}", membershipEvent.getMember());
-        hazelcastTopologyService.callbackWhenAgentReady(membershipEvent.getMember(), 0);
+        eventBus.post(new MemberJoinedEvent(membershipEvent.getMember()));
     }
 
     @Override
     public void memberRemoved(MembershipEvent membershipEvent) {
         LOG.info("Member disconnected {}", membershipEvent.getMember());
-        hazelcastTopologyService.removeAgent(membershipEvent.getMember());
-
-        //TODO start a thread to reschedule the tasks to different agents if the agent does not reconnect
+        eventBus.post(new AgentLeftEvent(membershipEvent.getMember()));
     }
 
     @Override

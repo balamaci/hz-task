@@ -45,20 +45,37 @@ public class ClusterDistributionService {
     }
 
     public void submitDistributedTask(Task task) {
-        Optional<Member> memberToRunOn = routingStrategy.getMemberToRunOn();
-
-        String executeOn = "-1"; //unassigned
+        String clusterInstanceId = getClusterInstanceToRunOn();
         TaskKey taskKey = new TaskKey(task.getId());
-        if (memberToRunOn.isPresent()) {
-            executeOn = memberToRunOn.get().getUuid();
-        }
-        task.setClusterInstanceUuid(executeOn);
+        task.setClusterInstanceUuid(clusterInstanceId);
 
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
         log.info("Adding task={} to Map for AgentID {}", task, task.getClusterInstanceUuid());
-        tasks.put(taskKey, task);
+        tasks.set(taskKey, task);
         log.info("Added task to Map", task.getId());
+    }
+
+    public void rescheduleTask(TaskKey taskKey) {
+        Task task = tasks.get(taskKey);
+        task.setInternalCounter(latestTaskCounter.getAndIncrement());
+
+        String clusterInstanceId = getClusterInstanceToRunOn();
+        task.setClusterInstanceUuid(clusterInstanceId);
+
+        log.info("Rescheduling task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
+        tasks.set(taskKey, task);
+    }
+
+    private String getClusterInstanceToRunOn() {
+        Optional<Member> memberToRunOn = routingStrategy.getMemberToRunOn();
+
+        String executeOn = "-1"; //unassigned
+        if (memberToRunOn.isPresent()) {
+            executeOn = memberToRunOn.get().getUuid();
+        }
+
+        return executeOn;
     }
 
     public Task removeTask(TaskKey taskKey) {
@@ -73,27 +90,30 @@ public class ClusterDistributionService {
         return tasks.keySet(predicate);
     }
 
+/*
     public void rescheduleTask(TaskKey taskKey) {
         Task oldTask = removeTask(taskKey);
         submitDistributedTask(oldTask);
     }
+*/
 
     public void rescheduleOlderTasks(long lastKey) {
         Predicate selectionPredicate = Predicates.lessThan("internalCounter", lastKey);
 
-        PagingPredicate pagingPredicate = new PagingPredicate(selectionPredicate,
-                new PriorityAndOldestTaskComparator(),
-                100);
-
-        for( ; ; ){
-            Set<TaskKey> oldTasks = queryTaskKeys(pagingPredicate);
-            log.info("Looking for Older tasks, found {} ", oldTasks.size());
-
-            for (TaskKey taskKey : oldTasks) {
-                rescheduleTask(taskKey);
+        for (; ; ) {
+            boolean moreTasksFound = rescheduleMatchedTasks(100, selectionPredicate);
+            if(! moreTasksFound) {
+                break;
             }
+        }
+    }
 
-            if(oldTasks.size() == 0) {
+    public void rescheduleAgentTasks(String clusterUuid) {
+        Predicate selectionPredicate = Predicates.lessThan("clusterInstanceUuid", clusterUuid);
+
+        for (; ; ) {
+            boolean moreTasksFound = rescheduleMatchedTasks(100, selectionPredicate);
+            if(! moreTasksFound) {
                 break;
             }
         }
@@ -101,19 +121,22 @@ public class ClusterDistributionService {
 
     public boolean rescheduleUnassignedTasks(int batchSize) {
         Predicate selectionPredicate = Predicates.equal("clusterInstanceUuid", "-1");
+        return rescheduleMatchedTasks(batchSize, selectionPredicate);
+    }
 
+    public boolean rescheduleMatchedTasks(int batchSize, Predicate selectionPredicate) {
         PagingPredicate pagingPredicate = new PagingPredicate(selectionPredicate,
                 new PriorityAndOldestTaskComparator(),
                 batchSize);
 
-        Set<TaskKey> unscheduledTasks = queryTaskKeys(pagingPredicate);
-        log.info("Looking for unscheduled tasks found {} ", unscheduledTasks.size());
+        Set<TaskKey> foundTasks = queryTaskKeys(pagingPredicate);
+        log.info("Looking for paged tasks matching {} found {} ", selectionPredicate, foundTasks.size());
 
-        for(TaskKey taskKey: unscheduledTasks) {
+        for(TaskKey taskKey: foundTasks) {
             rescheduleTask(taskKey);
         }
 
-        return unscheduledTasks.size() > 0;
+        return foundTasks.size() > 0;
     }
 
     public int getTaskCount() {

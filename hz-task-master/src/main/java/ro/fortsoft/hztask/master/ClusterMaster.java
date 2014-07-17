@@ -45,13 +45,15 @@ public class ClusterMaster {
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.MASTER);
 
         hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus);
+        clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService);
 
         checkNoOtherMasterClusterAmongMembers();
 
-        registerAlreadyPresentAgents();
-        hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(hazelcastTopologyService));
+        registerMembershipListener();
 
-        clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService);
+        registerAlreadyPresentAgents();
+        hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(eventBus));
+
 
         //TODO with HZ3.3 change it to highest value retrieved by Aggregate
         long latestTaskCounter = System.currentTimeMillis();
@@ -67,7 +69,10 @@ public class ClusterMaster {
     }
 
     private void registerMembershipListener() {
-        eventBus.register(new AgentMembershipSubscriber());
+        AgentMembershipSubscriber agentMembershipSubscriber = new AgentMembershipSubscriber();
+        agentMembershipSubscriber.setClusterDistributionService(clusterDistributionService);
+        agentMembershipSubscriber.setHazelcastTopologyService(hazelcastTopologyService);
+        eventBus.register(agentMembershipSubscriber);
     }
 
 

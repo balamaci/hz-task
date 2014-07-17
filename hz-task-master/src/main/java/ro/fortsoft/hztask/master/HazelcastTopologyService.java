@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.master.event.event.AgentJoinedEvent;
-import ro.fortsoft.hztask.master.event.event.AgentLeftEvent;
 import ro.fortsoft.hztask.op.AbstractClusterOp;
 import ro.fortsoft.hztask.op.GetMemberTypeClusterOp;
 import ro.fortsoft.hztask.op.agent.AnnounceMasterAndSignalStartWorkOp;
@@ -102,12 +101,10 @@ public class HazelcastTopologyService {
 
     public void addAgent(Member member) {
         agents.add(member);
-        eventBus.post(new AgentJoinedEvent());
     }
 
     public void removeAgent(Member member) {
         agents.remove(member);
-        eventBus.post(new AgentLeftEvent());
     }
 
     public List<Member> getAgentsCopy() {
@@ -142,7 +139,7 @@ public class HazelcastTopologyService {
                 log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
                 sendMessageToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()));
 
-                addAgent(member);
+                eventBus.post(new AgentJoinedEvent(member));
             } else {
                 TimerTask timerTask = new TimerTask() {
                     @Override

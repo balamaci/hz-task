@@ -5,11 +5,11 @@ import com.hazelcast.core.Member;
 /**
  * @author Serban Balamaci
  */
-public class AgentLeftEvent {
+public class MemberJoinedEvent {
 
     private final Member member;
 
-    public AgentLeftEvent(Member member) {
+    public MemberJoinedEvent(Member member) {
         this.member = member;
     }
 
