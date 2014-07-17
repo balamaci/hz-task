@@ -1,5 +1,6 @@
 package ro.fortsoft.hztask.master;
 
+import com.google.common.eventbus.AsyncEventBus;
 import com.hazelcast.config.ClasspathXmlConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
@@ -11,11 +12,12 @@ import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
+import ro.fortsoft.hztask.master.event.AgentMembershipSubscriber;
 import ro.fortsoft.hztask.master.listener.ClusterMembershipListener;
-import ro.fortsoft.hztask.master.scheduler.UnassignedTaskReschedulerThread;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
 
 /**
  * @author Serban Balamaci
@@ -29,7 +31,9 @@ public class ClusterMaster {
     private ClusterDistributionService clusterDistributionService;
     private HazelcastTopologyService hazelcastTopologyService;
 
-    private UnassignedTaskReschedulerThread unassignedTaskReschedulerThread;
+    private AsyncEventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
+
+    private ClusterMasterServiceImpl clusterMasterService;
 
     private volatile boolean shuttingDown = false;
 
@@ -40,7 +44,7 @@ public class ClusterMaster {
         hzInstance = Hazelcast.newHazelcastInstance(cfg);
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.MASTER);
 
-        hazelcastTopologyService = new HazelcastTopologyService(hzInstance);
+        hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus);
 
         checkNoOtherMasterClusterAmongMembers();
 
@@ -49,14 +53,23 @@ public class ClusterMaster {
 
         clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService);
 
-        ClusterMasterServiceImpl clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
+        //TODO with HZ3.3 change it to highest value retrieved by Aggregate
+        long latestTaskCounter = System.currentTimeMillis();
+        clusterDistributionService.setLatestTaskCounter(System.currentTimeMillis());
+        clusterDistributionService.rescheduleOlderTasks(latestTaskCounter);
+
+        clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
                 clusterDistributionService);
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_MASTER_SERVICE,
                 clusterMasterService);
-        unassignedTaskReschedulerThread = new UnassignedTaskReschedulerThread(clusterMasterService, 10000);
-        unassignedTaskReschedulerThread.start();
+        clusterMasterService.startUnassignedTasksReschedulerThread();
     }
+
+    private void registerMembershipListener() {
+        eventBus.register(new AgentMembershipSubscriber());
+    }
+
 
     public void submitTask(Task task) {
         clusterDistributionService.submitDistributedTask(task);
@@ -72,8 +85,8 @@ public class ClusterMaster {
     public void shutdown() {
         shuttingDown = true;
 
-        unassignedTaskReschedulerThread.interrupt();
-        List<Member> members = hazelcastTopologyService.getAgents();
+        clusterMasterService.stopUnassignedTasksReschedulerThread();
+        List<Member> members = hazelcastTopologyService.getAgentsCopy();
         for(Member member : members) {
             hazelcastTopologyService.sendShutdownMessageToMember(member);
         }

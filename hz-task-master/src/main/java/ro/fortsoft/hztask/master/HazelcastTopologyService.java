@@ -1,6 +1,7 @@
 package ro.fortsoft.hztask.master;
 
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.AsyncEventBus;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
@@ -9,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
+import ro.fortsoft.hztask.master.event.event.AgentJoinedEvent;
+import ro.fortsoft.hztask.master.event.event.AgentLeftEvent;
 import ro.fortsoft.hztask.op.AbstractClusterOp;
 import ro.fortsoft.hztask.op.GetMemberTypeClusterOp;
 import ro.fortsoft.hztask.op.agent.AnnounceMasterAndSignalStartWorkOp;
@@ -38,10 +41,14 @@ public class HazelcastTopologyService {
 
     private static final int MAX_ASK_READY_ATTEMPTS = 5;
 
-    public HazelcastTopologyService(HazelcastInstance hzInstance) {
+    private AsyncEventBus eventBus;
+
+
+    public HazelcastTopologyService(HazelcastInstance hzInstance, AsyncEventBus eventBus) {
         this.hzInstance = hzInstance;
         communicationExecutorService = hzInstance.getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_COMS);
         agents = new CopyOnWriteArrayList<>();
+        this.eventBus = eventBus;
     }
 
     private Future<MemberType> isMemberMaster(Member member) {
@@ -93,12 +100,18 @@ public class HazelcastTopologyService {
         return communicationExecutorService.submitToMember(op, member);
     }
 
-    public void removeAgent(Member member) {
-        agents.remove(member);
+    public void addAgent(Member member) {
+        agents.add(member);
+        eventBus.post(new AgentJoinedEvent());
     }
 
-    public List<Member> getAgents() {
-        return agents;
+    public void removeAgent(Member member) {
+        agents.remove(member);
+        eventBus.post(new AgentLeftEvent());
+    }
+
+    public List<Member> getAgentsCopy() {
+        return Lists.newArrayList(agents);
     }
 
     public int getAgentsCount() {
@@ -129,7 +142,7 @@ public class HazelcastTopologyService {
                 log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
                 sendMessageToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()));
 
-                getAgents().add(member);
+                addAgent(member);
             } else {
                 TimerTask timerTask = new TimerTask() {
                     @Override

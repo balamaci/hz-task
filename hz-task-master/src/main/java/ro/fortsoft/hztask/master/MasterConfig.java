@@ -10,14 +10,23 @@ import java.util.Map;
  */
 public class MasterConfig {
 
-    private Map<Class, TaskCompletionListenerFactory> finishedTaskProcessors = new HashMap<>();
+    private Map<Class, TaskCompletionListenerFactory> finishedTaskListeners = new HashMap<>();
 
-    public void registerFinishedTaskProcessorFactory(Class taskClass,
+    private long unassignedTaskReschedulerWaitTimeMs = 10000;
+
+    public void registerFinishedTaskCompletionListenerFactory(Class taskClass,
                                                      TaskCompletionListenerFactory taskCompletionListenerFactory) {
-        finishedTaskProcessors.put(taskClass, taskCompletionListenerFactory);
+        finishedTaskListeners.put(taskClass, taskCompletionListenerFactory);
     }
 
-    public Map<Class, TaskCompletionListenerFactory> getFinishedTaskProcessors() {
-        return finishedTaskProcessors;
+    public Map<Class, TaskCompletionListenerFactory> getFinishedTaskListeners() {
+        return finishedTaskListeners;
     }
+
+    public long getUnassignedTaskReschedulerWaitTimeMs() {
+        return unassignedTaskReschedulerWaitTimeMs;
+    }
+
+
+
 }

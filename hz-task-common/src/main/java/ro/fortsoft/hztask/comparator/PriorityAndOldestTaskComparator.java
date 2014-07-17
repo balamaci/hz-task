@@ -1,19 +1,20 @@
 package ro.fortsoft.hztask.comparator;
 
 import ro.fortsoft.hztask.common.task.Task;
-import ro.fortsoft.hztask.common.task.TaskKey;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Map;
 
 /**
  * @author Serban Balamaci
  */
-public class PriorityAndOldestTaskComparator implements Comparator<Map.Entry<TaskKey, Task>> {
+public class PriorityAndOldestTaskComparator implements Comparator<Map.Entry>, Serializable {
+
     @Override
-    public int compare(Map.Entry<TaskKey, Task> e1, Map.Entry<TaskKey, Task> e2) {
-        Task task1 = e1.getValue();
-        Task task2 = e2.getValue();
+    public int compare(Map.Entry e1, Map.Entry e2) {
+        Task task1 = (Task) e1.getValue();
+        Task task2 = (Task) e2.getValue();
 
         if(task1.getPriority() == task2.getPriority()) {
             return task1.getCreationDate() <= task2.getCreationDate() ? -1 : 1;

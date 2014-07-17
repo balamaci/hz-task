@@ -6,7 +6,7 @@ import java.util.UUID;
 /**
  * @author sbalamaci
  */
-public abstract class Task implements Serializable {
+public abstract class Task<I, O> implements Serializable {
 
     private final String id;
 
@@ -18,6 +18,8 @@ public abstract class Task implements Serializable {
     private int priority = 0;
 
     private long creationDate;
+
+    private long internalCounter;
 
     public Task() {
         id = UUID.randomUUID().toString();
@@ -58,5 +60,13 @@ public abstract class Task implements Serializable {
 
     public void setCreationDate(long creationDate) {
         this.creationDate = creationDate;
+    }
+
+    public long getInternalCounter() {
+        return internalCounter;
+    }
+
+    public void setInternalCounter(long internalCounter) {
+        this.internalCounter = internalCounter;
     }
 }

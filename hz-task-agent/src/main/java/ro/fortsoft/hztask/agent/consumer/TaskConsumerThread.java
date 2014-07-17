@@ -1,5 +1,10 @@
 package ro.fortsoft.hztask.agent.consumer;
 
+import com.hazelcast.core.IExecutorService;
+import com.hazelcast.core.IMap;
+import com.hazelcast.query.SqlPredicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.agent.ClusterAgentServiceImpl;
 import ro.fortsoft.hztask.agent.processor.TaskProcessor;
 import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
@@ -8,11 +13,6 @@ import ro.fortsoft.hztask.callback.TaskFinishedOp;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
-import com.hazelcast.core.IExecutorService;
-import com.hazelcast.core.IMap;
-import com.hazelcast.query.SqlPredicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Set;
@@ -56,35 +56,32 @@ public class TaskConsumerThread extends Thread {
             if(shuttingDown) {
                 break;
             }
-            Set<TaskKey> eligibleTasks = tasksMap.keySet(new SqlPredicate("clusterInstanceUuid=" + localClusterId));
-            boolean foundTask = false;
+            try {
+                Set<TaskKey> eligibleTasks = tasksMap.keySet(new SqlPredicate("clusterInstanceUuid=" + localClusterId));
+                boolean foundTask = false;
 
-            for (TaskKey taskKey : eligibleTasks) {
-                if (!runningTasks.contains(taskKey)) {
-                    Task task = tasksMap.get(taskKey);
-                    foundTask = true;
+                for (TaskKey taskKey : eligibleTasks) {
+                    if (!runningTasks.contains(taskKey)) {
+                        Task task = tasksMap.get(taskKey);
+                        foundTask = true;
 
-                    log.info("Work, work...");
-                    startProcessingTask(taskKey, task);
+                        log.info("Work, work...");
+                        startProcessingTask(taskKey, task);
+                    }
                 }
-            }
-            if (!foundTask) {
-                log.info("No Tasks found to process, sleeping a while...");
-                try {
+                if (!foundTask) {
+                    log.info("No Tasks found to process, sleeping a while...");
                     Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    //nothing, probably shuttingdown
                 }
+            } catch (InterruptedException e) {
+                log.info("TaskConsumer Thread received an interrupt signal, stopping");
+                break;
             }
         }
     }
 
-    private void startProcessingTask(TaskKey taskKey,Task task) {
-        try {
-            runningTasks.put(taskKey);
-        } catch (InterruptedException e) {
-            return;
-        }
+    private void startProcessingTask(TaskKey taskKey,Task task) throws InterruptedException {
+        runningTasks.put(taskKey);
 
         TaskProcessorFactory factory = clusterAgentService.getProcessorRegistry().get(task.getClass());
         TaskProcessor taskProcessor = factory.getObject();
@@ -99,7 +96,7 @@ public class TaskConsumerThread extends Thread {
         IExecutorService executorService = clusterAgentService.getHzInstance().
                 getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_FINISHED_TASKS);
 
-        log.info("Notifing Master of task {} finished succesfully", taskKey.getTaskId());
+        log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
         Future masterNotified = executorService.submitToMember(new TaskFinishedOp(taskKey, result),
                 clusterAgentService.getMaster());
         try {
@@ -107,7 +104,7 @@ public class TaskConsumerThread extends Thread {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
-            e.printStackTrace();
+            log.error("Task {}, failed to notify Master of it's status", e);
         }
 
         runningTasks.remove(taskKey);

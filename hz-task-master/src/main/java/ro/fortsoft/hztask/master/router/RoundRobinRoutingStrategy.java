@@ -1,8 +1,8 @@
 package ro.fortsoft.hztask.master.router;
 
-import ro.fortsoft.hztask.master.HazelcastTopologyService;
 import com.google.common.base.Optional;
 import com.hazelcast.core.Member;
+import ro.fortsoft.hztask.master.HazelcastTopologyService;
 
 /**
  * @author Serban Balamaci
@@ -18,14 +18,14 @@ public class RoundRobinRoutingStrategy implements RoutingStrategy {
     }
 
     @Override
-    public Optional<Member> getMemberToRunOn() {
-        if(hazelcastTopologyService.getAgents().size() == 0) {
+    public synchronized Optional<Member> getMemberToRunOn() {
+        if(hazelcastTopologyService.getAgentsCount() == 0) {
             return Optional.absent();
         }
 
         roundRobinCounter ++;
-        roundRobinCounter = roundRobinCounter % hazelcastTopologyService.getAgents().size();
+        roundRobinCounter = roundRobinCounter % hazelcastTopologyService.getAgentsCount();
 
-        return Optional.of(hazelcastTopologyService.getAgents().get(roundRobinCounter));
+        return Optional.of(hazelcastTopologyService.getAgentsCopy().get(roundRobinCounter));
     }
 }

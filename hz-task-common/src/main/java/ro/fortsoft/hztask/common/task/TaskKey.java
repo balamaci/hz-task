@@ -1,26 +1,16 @@
 package ro.fortsoft.hztask.common.task;
 
-import com.hazelcast.core.PartitionAware;
-
 import java.io.Serializable;
 
 /**
  * @author Serban Balamaci
  */
-public class TaskKey implements Serializable, PartitionAware<String> {
-
-    private final String clusterInstanceUuid;
+public class TaskKey implements Serializable {
 
     private final String taskId;
 
-    public TaskKey(String clusterInstanceUuid, String taskId, String taskClassName) {
-        this.clusterInstanceUuid = clusterInstanceUuid;
+    public TaskKey(String taskId) {
         this.taskId = taskId;
-    }
-
-    @Override
-    public String getPartitionKey() {
-        return clusterInstanceUuid;
     }
 
     public String getTaskId() {
