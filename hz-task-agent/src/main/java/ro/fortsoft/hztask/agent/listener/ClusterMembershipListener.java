@@ -18,7 +18,6 @@ public class ClusterMembershipListener implements MembershipListener {
 
     @Override
     public void memberAdded(MembershipEvent membershipEvent) {
-
     }
 
     @Override

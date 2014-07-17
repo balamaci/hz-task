@@ -4,6 +4,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.agent.consumer.TaskConsumerThread;
 import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
 import ro.fortsoft.hztask.cluster.IClusterAgentService;
@@ -34,6 +36,8 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
      */
     private ListeningExecutorService taskExecutorService;
 
+    private static final Logger log = LoggerFactory.getLogger(ClusterAgentServiceImpl.class);
+
     public ClusterAgentServiceImpl(AgentConfig agentConfig) {
         this.config = agentConfig;
         taskExecutorService = MoreExecutors.
@@ -62,6 +66,7 @@ public class ClusterAgentServiceImpl implements IClusterAgentService {
     }
 
     public void handleMasterLeft() {
+        log.info("Master has left the cluster!!");
         lockMaster.writeLock().lock();
         try {
             master = null;

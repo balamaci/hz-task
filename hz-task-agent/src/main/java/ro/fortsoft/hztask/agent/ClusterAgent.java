@@ -21,6 +21,7 @@ import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.hztask.agent.listener.ClusterMembershipListener;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 
@@ -44,8 +45,7 @@ public class ClusterAgent  {
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_AGENT_SERVICE,
                 clusterAgentService);
-//        tasks.addEntryListener(new TaskEntryListener(this),
-//                new SqlPredicate("clusterInstanceUuid=" + localUUID), true);
+        hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(clusterAgentService));
     }
 
 }
