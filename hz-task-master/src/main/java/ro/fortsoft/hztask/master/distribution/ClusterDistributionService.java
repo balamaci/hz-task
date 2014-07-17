@@ -109,7 +109,7 @@ public class ClusterDistributionService {
     }
 
     public void rescheduleAgentTasks(String clusterUuid) {
-        Predicate selectionPredicate = Predicates.lessThan("clusterInstanceUuid", clusterUuid);
+        Predicate selectionPredicate = Predicates.equal("clusterInstanceUuid", clusterUuid);
 
         for (; ; ) {
             boolean moreTasksFound = rescheduleMatchedTasks(100, selectionPredicate);
