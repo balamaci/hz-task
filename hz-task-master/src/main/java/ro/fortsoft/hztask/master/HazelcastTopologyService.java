@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -32,7 +32,7 @@ public class HazelcastTopologyService {
 
     private final IExecutorService communicationExecutorService;
 
-    private CopyOnWriteArrayList<Member> agents;
+    private CopyOnWriteArraySet<Member> agents;
 
     private HazelcastInstance hzInstance;
 
@@ -46,7 +46,7 @@ public class HazelcastTopologyService {
     public HazelcastTopologyService(HazelcastInstance hzInstance, AsyncEventBus eventBus) {
         this.hzInstance = hzInstance;
         communicationExecutorService = hzInstance.getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_COMS);
-        agents = new CopyOnWriteArrayList<>();
+        agents = new CopyOnWriteArraySet<>();
         this.eventBus = eventBus;
     }
 

@@ -12,10 +12,13 @@ import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
-import ro.fortsoft.hztask.master.event.AgentMembershipSubscriber;
+import ro.fortsoft.hztask.master.event.membership.AgentMembershipSubscriber;
 import ro.fortsoft.hztask.master.listener.ClusterMembershipListener;
+import ro.fortsoft.hztask.master.router.BalancedWorkloadRoutingStrategy;
+import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
+import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -34,6 +37,7 @@ public class ClusterMaster {
     private AsyncEventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
 
     private ClusterMasterServiceImpl clusterMasterService;
+    private TaskCompletionHandlerService taskCompletionHandlerService;
 
     private volatile boolean shuttingDown = false;
 
@@ -45,7 +49,10 @@ public class ClusterMaster {
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.MASTER);
 
         hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus);
-        clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService);
+        clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService,
+                new CodahaleStatisticsService());
+        clusterDistributionService.setRoutingStrategy(new BalancedWorkloadRoutingStrategy(hazelcastTopologyService,
+                clusterDistributionService.getStatisticsService()));
 
         checkNoOtherMasterClusterAmongMembers();
 
@@ -54,18 +61,18 @@ public class ClusterMaster {
         registerAlreadyPresentAgents();
         hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(eventBus));
 
-
         //TODO with HZ3.3 change it to highest value retrieved by Aggregate
         long latestTaskCounter = System.currentTimeMillis();
         clusterDistributionService.setLatestTaskCounter(System.currentTimeMillis());
-        clusterDistributionService.rescheduleOlderTasks(latestTaskCounter);
+        clusterDistributionService.unassignOlderTasks(latestTaskCounter);
 
+        taskCompletionHandlerService = new TaskCompletionHandlerService(masterConfig);
         clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
-                clusterDistributionService);
+                clusterDistributionService, taskCompletionHandlerService);
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_MASTER_SERVICE,
                 clusterMasterService);
-        clusterMasterService.startUnassignedTasksReschedulerThread();
+//        clusterMasterService.startUnassignedTasksReschedulerThread();
     }
 
     private void registerMembershipListener() {
@@ -77,7 +84,7 @@ public class ClusterMaster {
 
 
     public void submitTask(Task task) {
-        clusterDistributionService.submitDistributedTask(task);
+        clusterDistributionService.enqueueTask(task);
     }
 
     private void checkNoOtherMasterClusterAmongMembers() {
@@ -91,7 +98,7 @@ public class ClusterMaster {
         shuttingDown = true;
 
         clusterMasterService.stopUnassignedTasksReschedulerThread();
-        List<Member> members = hazelcastTopologyService.getAgentsCopy();
+        Collection<Member> members = hazelcastTopologyService.getAgentsCopy();
         for(Member member : members) {
             hazelcastTopologyService.sendShutdownMessageToMember(member);
         }

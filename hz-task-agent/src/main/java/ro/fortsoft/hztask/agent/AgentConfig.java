@@ -12,7 +12,7 @@ public class AgentConfig {
 
     private Map<Class, TaskProcessorFactory> processorRegistry = new HashMap<>();
 
-    private int maxRunningTasks = 10;
+    private int maxRunningTasks = 5;
 
     public void registerTaskProcessorFactory(Class taskClass, TaskProcessorFactory taskProcessorFactory) {
         processorRegistry.put(taskClass, taskProcessorFactory);

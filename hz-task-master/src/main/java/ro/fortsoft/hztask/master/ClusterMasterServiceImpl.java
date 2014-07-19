@@ -1,15 +1,13 @@
 package ro.fortsoft.hztask.master;
 
-import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.cluster.IClusterMasterService;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
-import ro.fortsoft.hztask.master.listener.TaskCompletionListener;
-import ro.fortsoft.hztask.master.listener.TaskCompletionListenerFactory;
 import ro.fortsoft.hztask.master.scheduler.UnassignedTasksReschedulerThread;
+import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 
 import java.io.Serializable;
 
@@ -22,13 +20,20 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     private ClusterDistributionService clusterDistributionService;
 
-    private Logger log = LoggerFactory.getLogger(ClusterMasterServiceImpl.class);
-
     private UnassignedTasksReschedulerThread unassignedTasksReschedulerThread;
 
-    public ClusterMasterServiceImpl(MasterConfig masterConfig, ClusterDistributionService clusterDistributionService) {
+    private TaskCompletionHandlerService taskCompletionHandlerService;
+
+
+
+    private Logger log = LoggerFactory.getLogger(ClusterMasterServiceImpl.class);
+
+    public ClusterMasterServiceImpl(MasterConfig masterConfig,
+                                    ClusterDistributionService clusterDistributionService,
+                                    TaskCompletionHandlerService taskCompletionHandlerService) {
         this.masterConfig = masterConfig;
         this.clusterDistributionService = clusterDistributionService;
+        this.taskCompletionHandlerService = taskCompletionHandlerService;
         unassignedTasksReschedulerThread = new UnassignedTasksReschedulerThread(clusterDistributionService,
                 masterConfig);
     }
@@ -36,44 +41,19 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     @Override
     public void handleFinishedTask(TaskKey taskKey, Serializable response, String agentUuid) {
         log.info("Task with id {} finished on {}", taskKey.getTaskId(), agentUuid);
-        Task task = clusterDistributionService.removeTask(taskKey);
-        if(task == null) {
-            log.error("Could not find task with id {}", taskKey.getTaskId());
-            return;
-        }
+        Task task = clusterDistributionService.finishedTask(taskKey, agentUuid, false);
 
-        Optional<TaskCompletionListener> finishedTaskProcessor = getProcessorForTaskClass(task);
-        if (finishedTaskProcessor.isPresent()) {
-            finishedTaskProcessor.get().onSuccess(task, response);
-        }
+        taskCompletionHandlerService.onSuccess(task, response);
     }
 
     @Override
     public void handleFailedTask(TaskKey taskKey, Throwable exception, String agentUuid) {
         log.info("Task with id {} failed on {}", taskKey.getTaskId(), agentUuid);
-        Task task = clusterDistributionService.removeTask(taskKey);
-        if(task == null) {
-            log.error("Could not find task with id {}", taskKey.getTaskId());
-            return;
-        }
+        Task task = clusterDistributionService.finishedTask(taskKey, agentUuid, true);
 
-        Optional<TaskCompletionListener> finishedTaskProcessor = getProcessorForTaskClass(task);
-        if (finishedTaskProcessor.isPresent()) {
-            finishedTaskProcessor.get().onFail(task, exception);
-        }
+        taskCompletionHandlerService.onFail(task, exception);
     }
 
-    private Optional<TaskCompletionListener> getProcessorForTaskClass(Task task) {
-        TaskCompletionListenerFactory taskCompletionListenerFactory = masterConfig.
-                getFinishedTaskListeners().get(task.getClass());
-
-        if (taskCompletionListenerFactory != null) {
-            TaskCompletionListener taskCompletionListener = taskCompletionListenerFactory.getObject();
-            return Optional.fromNullable(taskCompletionListener);
-        }
-
-        return Optional.absent();
-    }
 
     public synchronized void startUnassignedTasksReschedulerThread() {
         if(unassignedTasksReschedulerThread == null || ! unassignedTasksReschedulerThread.isAlive()) {
