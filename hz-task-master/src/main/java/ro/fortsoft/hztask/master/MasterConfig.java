@@ -1,6 +1,6 @@
 package ro.fortsoft.hztask.master;
 
-import ro.fortsoft.hztask.master.listener.TaskCompletionListenerFactory;
+import ro.fortsoft.hztask.master.listener.TaskCompletionHandlerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,16 +10,16 @@ import java.util.Map;
  */
 public class MasterConfig {
 
-    private Map<Class, TaskCompletionListenerFactory> finishedTaskListeners = new HashMap<>();
+    private Map<Class, TaskCompletionHandlerFactory> finishedTaskListeners = new HashMap<>();
 
     private long unassignedTaskReschedulerWaitTimeMs = 10000;
 
     public void registerFinishedTaskCompletionListenerFactory(Class taskClass,
-                                                     TaskCompletionListenerFactory taskCompletionListenerFactory) {
-        finishedTaskListeners.put(taskClass, taskCompletionListenerFactory);
+                                                     TaskCompletionHandlerFactory taskCompletionHandlerFactory) {
+        finishedTaskListeners.put(taskClass, taskCompletionHandlerFactory);
     }
 
-    public Map<Class, TaskCompletionListenerFactory> getFinishedTaskListeners() {
+    public Map<Class, TaskCompletionHandlerFactory> getFinishedTaskListeners() {
         return finishedTaskListeners;
     }
 

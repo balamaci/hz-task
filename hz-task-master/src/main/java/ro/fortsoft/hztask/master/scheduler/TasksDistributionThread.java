@@ -42,14 +42,7 @@ public class TasksDistributionThread extends Thread {
         double throughput = computeThroughput(totalSubmittedTasks, totalFinishedTasks);
         log.info("Found THROUGHPUT {} and lastThroughput={}", throughput, lastThroughput);
 
-        int oldWindowSize = windowSize;
-        if(lastThroughput > throughput) {
-            decWindowSize();
-        } else {
-            incWindowSize();
-        }
-        lastThroughput = throughput;
-        log.info("NEW WindowSize={} ---- Previous WindowSize={}", windowSize, oldWindowSize);
+        recomputeWindowSize(throughput);
 
         try {
             boolean shouldRun = true;
@@ -83,8 +76,15 @@ public class TasksDistributionThread extends Thread {
         return throughputBD.setScale(3, BigDecimal.ROUND_HALF_UP).doubleValue();
     }
 
-    private void recomputeWindowSize() {
-
+    private void recomputeWindowSize(double throughput) {
+        int oldWindowSize = windowSize;
+        if(lastThroughput > throughput) {
+            decWindowSize();
+        } else {
+            incWindowSize();
+        }
+        lastThroughput = throughput;
+        log.info("NEW WindowSize={} ---- Previous WindowSize={}", windowSize, oldWindowSize);
     }
 
     private long getTotalSubmittedTasks(Collection<Member> members) {

@@ -5,8 +5,8 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.master.MasterConfig;
-import ro.fortsoft.hztask.master.listener.TaskCompletionListener;
-import ro.fortsoft.hztask.master.listener.TaskCompletionListenerFactory;
+import ro.fortsoft.hztask.master.listener.TaskCompletionHandler;
+import ro.fortsoft.hztask.master.listener.TaskCompletionHandlerFactory;
 
 import java.util.concurrent.Executors;
 
@@ -26,7 +26,7 @@ public class TaskCompletionHandlerService {
     }
 
     public void onSuccess(final Task task, final Object taskResult) {
-        final Optional<TaskCompletionListener> finishedTaskProcessor = getProcessorForTaskClass(task);
+        final Optional<TaskCompletionHandler> finishedTaskProcessor = getProcessorForTaskClass(task);
         if (finishedTaskProcessor.isPresent()) {
             taskExecutorService.submit(new Runnable() {
                 @Override
@@ -38,7 +38,7 @@ public class TaskCompletionHandlerService {
     }
 
     public void onFail(final Task task, final Throwable exception) {
-        final Optional<TaskCompletionListener> finishedTaskProcessor = getProcessorForTaskClass(task);
+        final Optional<TaskCompletionHandler> finishedTaskProcessor = getProcessorForTaskClass(task);
         if (finishedTaskProcessor.isPresent()) {
             taskExecutorService.submit(new Runnable() {
                 @Override
@@ -49,13 +49,13 @@ public class TaskCompletionHandlerService {
         }
     }
 
-    private Optional<TaskCompletionListener> getProcessorForTaskClass(Task task) {
-        TaskCompletionListenerFactory taskCompletionListenerFactory = masterConfig.
+    private Optional<TaskCompletionHandler> getProcessorForTaskClass(Task task) {
+        TaskCompletionHandlerFactory taskCompletionHandlerFactory = masterConfig.
                 getFinishedTaskListeners().get(task.getClass());
 
-        if (taskCompletionListenerFactory != null) {
-            TaskCompletionListener taskCompletionListener = taskCompletionListenerFactory.getObject();
-            return Optional.fromNullable(taskCompletionListener);
+        if (taskCompletionHandlerFactory != null) {
+            TaskCompletionHandler taskCompletionHandler = taskCompletionHandlerFactory.getObject();
+            return Optional.fromNullable(taskCompletionHandler);
         }
 
         return Optional.absent();
