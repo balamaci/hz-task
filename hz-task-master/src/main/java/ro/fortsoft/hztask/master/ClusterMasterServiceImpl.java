@@ -7,6 +7,7 @@ import ro.fortsoft.hztask.cluster.IClusterMasterService;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
+import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 
 import java.io.Serializable;
@@ -20,6 +21,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     private MasterConfig masterConfig;
     private ClusterDistributionService clusterDistributionService;
     private TaskCompletionHandlerService taskCompletionHandlerService;
+    private CommunicationService communicationService;
 
     private volatile boolean shuttingDown = false;
 
@@ -27,10 +29,12 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     public ClusterMasterServiceImpl(MasterConfig masterConfig,
                                     ClusterDistributionService clusterDistributionService,
+                                    CommunicationService communicationService,
                                     TaskCompletionHandlerService taskCompletionHandlerService) {
         this.masterConfig = masterConfig;
         this.clusterDistributionService = clusterDistributionService;
         this.taskCompletionHandlerService = taskCompletionHandlerService;
+        this.communicationService = communicationService;
     }
 
     @Override
@@ -52,11 +56,11 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     public void shutdown() {
         shuttingDown = true;
 
-        clusterDistributionService.stopDistribution();
+        clusterDistributionService.stop();
         HazelcastTopologyService hazelcastTopologyService = clusterDistributionService.getHazelcastTopologyService();
         Collection<Member> members = hazelcastTopologyService.getAgentsCopy();
         for(Member member : members) {
-            hazelcastTopologyService.sendShutdownMessageToMember(member);
+            communicationService.sendShutdownMessageToMember(member);
         }
 
         hazelcastTopologyService.getHzInstance().shutdown();

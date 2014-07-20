@@ -15,6 +15,7 @@ import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
 import ro.fortsoft.hztask.master.event.membership.AgentMembershipSubscriber;
 import ro.fortsoft.hztask.master.listener.ClusterMembershipListener;
 import ro.fortsoft.hztask.master.router.BalancedWorkloadRoutingStrategy;
+import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
 
@@ -36,7 +37,6 @@ public class ClusterMaster {
     private AsyncEventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
 
     private ClusterMasterServiceImpl clusterMasterService;
-    private TaskCompletionHandlerService taskCompletionHandlerService;
 
 
     public ClusterMaster(MasterConfig masterConfig, String configXmlFileName) {
@@ -45,7 +45,8 @@ public class ClusterMaster {
         hzInstance = Hazelcast.newHazelcastInstance(cfg);
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.MASTER);
 
-        hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus);
+        CommunicationService communicationService = new CommunicationService(hzInstance);
+        hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus, communicationService);
         clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService,
                 new CodahaleStatisticsService());
         clusterDistributionService.setRoutingStrategy(new BalancedWorkloadRoutingStrategy(hazelcastTopologyService,
@@ -63,9 +64,9 @@ public class ClusterMaster {
         clusterDistributionService.setLatestTaskCounter(System.currentTimeMillis());
         clusterDistributionService.unassignOlderTasks(latestTaskCounter);
 
-        taskCompletionHandlerService = new TaskCompletionHandlerService(masterConfig);
+        TaskCompletionHandlerService taskCompletionHandlerService = new TaskCompletionHandlerService(masterConfig);
         clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
-                clusterDistributionService, taskCompletionHandlerService);
+                clusterDistributionService, communicationService, taskCompletionHandlerService);
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_MASTER_SERVICE,
                 clusterMasterService);

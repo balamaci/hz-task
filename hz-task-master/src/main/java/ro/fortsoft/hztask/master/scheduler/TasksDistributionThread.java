@@ -44,6 +44,8 @@ public class TasksDistributionThread extends Thread {
 
         recomputeWindowSize(throughput);
 
+        lastThroughput = throughput;
+
         try {
             boolean shouldRun = true;
             if(clusterDistributionService.getTaskCount() == 0) {
@@ -83,7 +85,6 @@ public class TasksDistributionThread extends Thread {
         } else {
             incWindowSize();
         }
-        lastThroughput = throughput;
         log.info("NEW WindowSize={} ---- Previous WindowSize={}", windowSize, oldWindowSize);
     }
 

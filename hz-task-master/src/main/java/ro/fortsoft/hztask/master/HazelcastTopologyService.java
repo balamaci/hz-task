@@ -4,18 +4,15 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.AsyncEventBus;
 import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.master.event.membership.AgentJoinedEvent;
-import ro.fortsoft.hztask.op.AbstractClusterOp;
+import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.op.GetMemberTypeClusterOp;
 import ro.fortsoft.hztask.op.agent.AnnounceMasterAndSignalStartWorkOp;
 import ro.fortsoft.hztask.op.agent.AskAgentReadyOp;
-import ro.fortsoft.hztask.op.agent.ShutdownAgentOp;
 
 import java.util.List;
 import java.util.Set;
@@ -26,11 +23,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
+ * Class that keeps evidence of cluster membership
+ *
  * @author Serban Balamaci
  */
 public class HazelcastTopologyService {
 
-    private final IExecutorService communicationExecutorService;
+    private final CommunicationService communicationService;
 
     private CopyOnWriteArraySet<Member> agents;
 
@@ -43,15 +42,16 @@ public class HazelcastTopologyService {
     private AsyncEventBus eventBus;
 
 
-    public HazelcastTopologyService(HazelcastInstance hzInstance, AsyncEventBus eventBus) {
+    public HazelcastTopologyService(HazelcastInstance hzInstance, AsyncEventBus eventBus,
+                                    CommunicationService communicationService) {
         this.hzInstance = hzInstance;
-        communicationExecutorService = hzInstance.getExecutorService(HzKeysConstants.EXECUTOR_SERVICE_COMS);
         agents = new CopyOnWriteArraySet<>();
         this.eventBus = eventBus;
+        this.communicationService = communicationService;
     }
 
     private Future<MemberType> isMemberMaster(Member member) {
-        return communicationExecutorService.submitToMember(new GetMemberTypeClusterOp(), member);
+        return communicationService.sendMessageToMember(member, new GetMemberTypeClusterOp());
     }
 
     public boolean isMasterAmongClusterMembers() {
@@ -87,17 +87,14 @@ public class HazelcastTopologyService {
 
         try {
             log.info("Asking {} if READY attempt {}", member, attempt);
-            communicationExecutorService.submitToMember(new AskAgentReadyOp(),
-                    member, new MemberReadyCallback(member, attempt));
+            communicationService.submitToMember(member, new AskAgentReadyOp(),
+                     new MemberReadyCallback(member, attempt));
         } catch (Exception e) {
             log.error("Error sending AskAgentReadyOp", e);
         }
     }
 
 
-    public Future sendMessageToMember(Member member, AbstractClusterOp op) {
-        return communicationExecutorService.submitToMember(op, member);
-    }
 
     public void addAgent(Member member) {
         agents.add(member);
@@ -119,9 +116,6 @@ public class HazelcastTopologyService {
         return hzInstance.getCluster().getLocalMember();
     }
 
-    public Future sendShutdownMessageToMember(Member member) {
-        return communicationExecutorService.submitToMember(new ShutdownAgentOp(), member);
-    }
 
     private class MemberReadyCallback implements ExecutionCallback<Boolean> {
 
@@ -137,7 +131,7 @@ public class HazelcastTopologyService {
         public void onResponse(Boolean response) {
             if(response) {
                 log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
-                sendMessageToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()));
+                communicationService.sendMessageToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()));
 
                 eventBus.post(new AgentJoinedEvent(member));
             } else {
