@@ -15,6 +15,12 @@ public class AgentMembershipSubscriber {
     private HazelcastTopologyService hazelcastTopologyService;
 
 
+    public AgentMembershipSubscriber(ClusterDistributionService clusterDistributionService,
+                                     HazelcastTopologyService hazelcastTopologyService) {
+        this.clusterDistributionService = clusterDistributionService;
+        this.hazelcastTopologyService = hazelcastTopologyService;
+    }
+
     @Subscribe
     public void memberJoined(MemberJoinedEvent event) {
         hazelcastTopologyService.callbackWhenAgentReady(event.getMember(), 0);
@@ -35,11 +41,4 @@ public class AgentMembershipSubscriber {
         agentLeftTaskRescheduler.start();
     }
 
-    public void setClusterDistributionService(ClusterDistributionService clusterDistributionService) {
-        this.clusterDistributionService = clusterDistributionService;
-    }
-
-    public void setHazelcastTopologyService(HazelcastTopologyService hazelcastTopologyService) {
-        this.hazelcastTopologyService = hazelcastTopologyService;
-    }
 }

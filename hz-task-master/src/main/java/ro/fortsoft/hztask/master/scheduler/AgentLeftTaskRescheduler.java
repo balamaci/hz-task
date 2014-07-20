@@ -22,6 +22,10 @@ public class AgentLeftTaskRescheduler extends Thread {
 
     @Override
     public void run() {
+        if(clusterDistributionService.isShuttingDown()) {
+            return;
+        }
+
         try {
              clusterDistributionService.rescheduleAgentTasks(member.getUuid());
         } catch (Exception e) {

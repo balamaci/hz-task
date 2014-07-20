@@ -46,10 +46,13 @@ public class ClusterDistributionService {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterDistributionService.class);
 
+    private volatile boolean shuttingDown = false;
+
     public ClusterDistributionService(HazelcastTopologyService hazelcastTopologyService,
                                       IStatisticsService statisticsService) {
         this.hazelcastTopologyService = hazelcastTopologyService;
         this.statisticsService = statisticsService;
+
         this.routingStrategy = new RoundRobinRoutingStrategy(hazelcastTopologyService);
         this.tasks = hazelcastTopologyService.getHzInstance().getMap(HzKeysConstants.TASKS_MAP);
         tasksDistributionThread = new TasksDistributionThread(this);
@@ -66,21 +69,6 @@ public class ClusterDistributionService {
         statisticsService.incBacklogTask(task.getClass().getName());
     }
 
-    public void submitDistributedTask(Task task) {
-        String clusterInstanceId = getClusterInstanceToRunOn();
-        TaskKey taskKey = new TaskKey(task.getId());
-        task.setClusterInstanceUuid(clusterInstanceId);
-
-        task.setInternalCounter(latestTaskCounter.getAndIncrement());
-
-        log.info("Adding task={} to Map for AgentID {}", task, task.getClusterInstanceUuid());
-        tasks.set(taskKey, task);
-        log.info("Added task to Map", task.getId());
-
-        statisticsService.decBacklogTask(task.getClass().getName());
-        statisticsService.incSubmittedTasks(task.getClass().getName(), clusterInstanceId);
-    }
-
     public void rescheduleTask(TaskKey taskKey) {
         Task task = tasks.get(taskKey);
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
@@ -90,11 +78,29 @@ public class ClusterDistributionService {
 
         log.info("Rescheduling task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
         tasks.set(taskKey, task);
-        if(! clusterInstanceId.equals(LOCAL_MASTER_UUID)) {
+        if (!clusterInstanceId.equals(LOCAL_MASTER_UUID)) {
             statisticsService.incSubmittedTasks(task.getClass().getName(), clusterInstanceId);
         }
     }
 
+    public void unassignTask(TaskKey taskKey) {
+        Task task = tasks.get(taskKey);
+
+        if (!LOCAL_MASTER_UUID.equals(task.getClusterInstanceUuid())) {
+            String clusterInstanceId = LOCAL_MASTER_UUID;
+
+            task.setClusterInstanceUuid(clusterInstanceId);
+
+            log.info("Unassigning task={}", task);
+            tasks.set(taskKey, task);
+        }
+    }
+
+    /**
+     * Uses the RoutingStrategy to look for the next agentUuid where
+     *
+     * @return the agentUuid where the next task should run
+     */
     private String getClusterInstanceToRunOn() {
         Optional<Member> memberToRunOn = routingStrategy.getMemberToRunOn();
 
@@ -108,17 +114,17 @@ public class ClusterDistributionService {
 
     public Task finishedTask(TaskKey taskKey, String agentUuid, boolean taskFailed) {
         Task task = tasks.remove(taskKey);
-        if(taskFailed) {
+        if (taskFailed) {
             statisticsService.incTaskFailedCounter(task.getClass().getName(), agentUuid);
         } else {
             statisticsService.incTaskFinishedCounter(task.getClass().getName(), agentUuid);
         }
 
-        doAfterTaskFinished(task, agentUuid);
+        doAfterTaskFinished(agentUuid);
         return task;
     }
 
-    private void doAfterTaskFinished(Task task, String agentUuid) {
+    private void doAfterTaskFinished(String agentUuid) {
         long totalSubmitted = statisticsService.getSubmittedTotalTaskCount(agentUuid);
         long totalProcessed = statisticsService.getTaskFinishedCountForMember(agentUuid)
                 + statisticsService.getTaskFailedCountForMember(agentUuid);
@@ -126,13 +132,17 @@ public class ClusterDistributionService {
         long remaining = totalSubmitted - totalProcessed;
         log.info("Found remaining tasks {} for {}", remaining, agentUuid);
 
-        if(remaining < 10) {
+        if (remaining < 10) {
             startTaskDistributionThread();
         }
     }
 
     public synchronized void startTaskDistributionThread() {
-        if(! tasksDistributionThread.isAlive()) {
+        if(shuttingDown) {
+            return;
+        }
+
+        if (!tasksDistributionThread.isAlive()) {
             log.info("Starting up TaskDistributionThread");
             TasksDistributionThread newTaskDistributionThread = new TasksDistributionThread(this);
             newTaskDistributionThread.setLastThroughput(tasksDistributionThread.getLastThroughput());
@@ -145,6 +155,12 @@ public class ClusterDistributionService {
         }
     }
 
+    public synchronized void stop() {
+        shuttingDown = true;
+        tasksDistributionThread.interrupt();
+    }
+
+
     public Collection<Task> queryTasks(Predicate predicate) {
         return tasks.values(predicate);
     }
@@ -153,18 +169,14 @@ public class ClusterDistributionService {
         return tasks.keySet(predicate);
     }
 
-/*
-    public void rescheduleTask(TaskKey taskKey) {
-        Task oldTask = removeTask(taskKey);
-        submitDistributedTask(oldTask);
-    }
-*/
 
     public void unassignOlderTasks(long lastKey) {
-        Predicate selectionPredicate = Predicates.lessThan("internalCounter", lastKey);
+        Predicate oldTaskPredicate = Predicates.lessThan("internalCounter", lastKey);
+        Predicate notAssigned = Predicates.notEqual("clusterInstanceUuid", LOCAL_MASTER_UUID);
 
+        Predicate selectionPredicate = Predicates.and(oldTaskPredicate, notAssigned);
         for (; ; ) {
-            boolean moreTasksFound = resetMatchedTasks(100, selectionPredicate);
+            boolean moreTasksFound = unassignMatchedTasks(100, selectionPredicate);
             if(! moreTasksFound) {
                 break;
             }
@@ -187,7 +199,7 @@ public class ClusterDistributionService {
         return rescheduleMatchedTasks(batchSize, selectionPredicate);
     }
 
-    public boolean resetMatchedTasks(int batchSize, Predicate selectionPredicate) {
+    public boolean unassignMatchedTasks(int batchSize, Predicate selectionPredicate) {
         PagingPredicate pagingPredicate = new PagingPredicate(selectionPredicate,
                 new PriorityAndOldestTaskComparator(),
                 batchSize);
@@ -196,7 +208,7 @@ public class ClusterDistributionService {
         log.info("Looking for paged tasks matching {} found {} ", selectionPredicate, foundTasks.size());
 
         for(TaskKey taskKey: foundTasks) {
-            rescheduleTask(taskKey);
+            unassignTask(taskKey);
         }
 
         return foundTasks.size() > 0;
@@ -240,5 +252,9 @@ public class ClusterDistributionService {
 
     public HazelcastTopologyService getHazelcastTopologyService() {
         return hazelcastTopologyService;
+    }
+
+    public boolean isShuttingDown() {
+        return shuttingDown;
     }
 }

@@ -1,15 +1,16 @@
 package ro.fortsoft.hztask.master;
 
+import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.cluster.IClusterMasterService;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
-import ro.fortsoft.hztask.master.scheduler.UnassignedTasksReschedulerThread;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * @author Serban Balamaci
@@ -17,14 +18,10 @@ import java.io.Serializable;
 public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     private MasterConfig masterConfig;
-
     private ClusterDistributionService clusterDistributionService;
-
-    private UnassignedTasksReschedulerThread unassignedTasksReschedulerThread;
-
     private TaskCompletionHandlerService taskCompletionHandlerService;
 
-
+    private volatile boolean shuttingDown = false;
 
     private Logger log = LoggerFactory.getLogger(ClusterMasterServiceImpl.class);
 
@@ -34,8 +31,6 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
         this.masterConfig = masterConfig;
         this.clusterDistributionService = clusterDistributionService;
         this.taskCompletionHandlerService = taskCompletionHandlerService;
-        unassignedTasksReschedulerThread = new UnassignedTasksReschedulerThread(clusterDistributionService,
-                masterConfig);
     }
 
     @Override
@@ -54,19 +49,17 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
         taskCompletionHandlerService.onFail(task, exception);
     }
 
+    public void shutdown() {
+        shuttingDown = true;
 
-    public synchronized void startUnassignedTasksReschedulerThread() {
-        if(unassignedTasksReschedulerThread == null || ! unassignedTasksReschedulerThread.isAlive()) {
-            unassignedTasksReschedulerThread = new UnassignedTasksReschedulerThread(clusterDistributionService,
-                    masterConfig);
-            unassignedTasksReschedulerThread.start();
+        clusterDistributionService.stopDistribution();
+        HazelcastTopologyService hazelcastTopologyService = clusterDistributionService.getHazelcastTopologyService();
+        Collection<Member> members = hazelcastTopologyService.getAgentsCopy();
+        for(Member member : members) {
+            hazelcastTopologyService.sendShutdownMessageToMember(member);
         }
-    }
 
-    public synchronized void stopUnassignedTasksReschedulerThread() {
-        if(unassignedTasksReschedulerThread != null && unassignedTasksReschedulerThread.isAlive()) {
-            unassignedTasksReschedulerThread.interrupt();
-        }
+        hazelcastTopologyService.getHzInstance().shutdown();
     }
 
 }

@@ -3,6 +3,7 @@ package ro.fortsoft.hztask.agent.consumer;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.Member;
 import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.SqlPredicate;
@@ -113,15 +114,20 @@ public class TaskConsumerThread extends Thread {
                 EXECUTOR_SERVICE_FINISHED_TASKS);
 
         log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
-        Future masterNotified = executorService.submitToMember(new NotifyMasterTaskFinishedOp(taskKey, result,
-                        ClusterUtil.getLocalMemberUuid(hzInstance)),
-                clusterAgentService.getMaster());
-        try {
-            masterNotified.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            log.error("Task {}, failed to notify Master of it's status", e);
+        Member master = clusterAgentService.getMaster();
+        if(master != null) {
+            Future masterNotified = executorService.submitToMember(new NotifyMasterTaskFinishedOp(taskKey, result,
+                            ClusterUtil.getLocalMemberUuid(hzInstance)),
+                    master);
+            try {
+                masterNotified.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                log.error("Task {}, failed to notify Master of it's status", e);
+            }
+        } else {
+            log.info("Wanted to notify Master but Master left");
         }
 
         runningTasks.remove(taskKey);
@@ -132,17 +138,21 @@ public class TaskConsumerThread extends Thread {
         IExecutorService executorService = hzInstance.getExecutorService(HzKeysConstants.
                 EXECUTOR_SERVICE_FINISHED_TASKS);
 
-        Future masterNotified = executorService.submitToMember(new NotifyMasterTaskFailedOp(taskKey, exception,
-                ClusterUtil.getLocalMemberUuid(hzInstance)),
-                clusterAgentService.getMaster());
-        try {
-            masterNotified.get();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            log.error("Task {}, failed to notify Master of it's status", e);
+        Member master = clusterAgentService.getMaster();
+        if(master != null) {
+            Future masterNotified = executorService.submitToMember(new NotifyMasterTaskFailedOp(taskKey, exception,
+                            ClusterUtil.getLocalMemberUuid(hzInstance)),
+                    master);
+            try {
+                masterNotified.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                log.error("Task {}, failed to notify Master of it's status", e);
+            }
+        } else {
+            log.info("Wanted to notify Master but Master left");
         }
-
         runningTasks.remove(taskKey);
     }
 

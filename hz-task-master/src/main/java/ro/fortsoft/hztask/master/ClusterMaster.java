@@ -18,7 +18,6 @@ import ro.fortsoft.hztask.master.router.BalancedWorkloadRoutingStrategy;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -38,8 +37,6 @@ public class ClusterMaster {
 
     private ClusterMasterServiceImpl clusterMasterService;
     private TaskCompletionHandlerService taskCompletionHandlerService;
-
-    private volatile boolean shuttingDown = false;
 
 
     public ClusterMaster(MasterConfig masterConfig, String configXmlFileName) {
@@ -76,9 +73,8 @@ public class ClusterMaster {
     }
 
     private void registerMembershipListener() {
-        AgentMembershipSubscriber agentMembershipSubscriber = new AgentMembershipSubscriber();
-        agentMembershipSubscriber.setClusterDistributionService(clusterDistributionService);
-        agentMembershipSubscriber.setHazelcastTopologyService(hazelcastTopologyService);
+        AgentMembershipSubscriber agentMembershipSubscriber =
+                new AgentMembershipSubscriber(clusterDistributionService, hazelcastTopologyService);
         eventBus.register(agentMembershipSubscriber);
     }
 
@@ -95,15 +91,7 @@ public class ClusterMaster {
     }
 
     public void shutdown() {
-        shuttingDown = true;
-
-        clusterMasterService.stopUnassignedTasksReschedulerThread();
-        Collection<Member> members = hazelcastTopologyService.getAgentsCopy();
-        for(Member member : members) {
-            hazelcastTopologyService.sendShutdownMessageToMember(member);
-        }
-
-        hzInstance.shutdown();
+        clusterMasterService.shutdown();
     }
 
     public int getActiveWorkersCount() {
