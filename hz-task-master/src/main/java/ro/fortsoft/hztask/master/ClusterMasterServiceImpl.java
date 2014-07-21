@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.cluster.IClusterMasterService;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
-import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
+import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 

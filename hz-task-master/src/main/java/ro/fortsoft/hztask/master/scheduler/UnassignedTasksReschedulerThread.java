@@ -3,7 +3,7 @@ package ro.fortsoft.hztask.master.scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.master.MasterConfig;
-import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
+import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 
 /**
  * @author Serban Balamaci

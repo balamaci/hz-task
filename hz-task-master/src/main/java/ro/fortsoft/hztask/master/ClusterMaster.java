@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.common.task.Task;
-import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
+import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.event.membership.AgentMembershipSubscriber;
 import ro.fortsoft.hztask.master.listener.ClusterMembershipListener;
 import ro.fortsoft.hztask.master.router.BalancedWorkloadRoutingStrategy;

@@ -3,7 +3,7 @@ package ro.fortsoft.hztask.master.event.membership;
 import com.google.common.eventbus.Subscribe;
 import com.hazelcast.core.Member;
 import ro.fortsoft.hztask.master.HazelcastTopologyService;
-import ro.fortsoft.hztask.master.distribution.ClusterDistributionService;
+import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.scheduler.AgentLeftTaskRescheduler;
 
 /**

@@ -1,4 +1,4 @@
-package ro.fortsoft.hztask.master.distribution;
+package ro.fortsoft.hztask.master.service;
 
 import com.google.common.base.Optional;
 import com.hazelcast.core.IMap;
