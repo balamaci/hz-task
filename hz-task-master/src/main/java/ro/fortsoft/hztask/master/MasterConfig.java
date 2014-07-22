@@ -12,8 +12,6 @@ public class MasterConfig {
 
     private Map<Class, TaskCompletionHandlerFactory> finishedTaskListeners = new HashMap<>();
 
-    private long unassignedTaskReschedulerWaitTimeMs = 10000;
-
     public void registerFinishedTaskCompletionListenerFactory(Class taskClass,
                                                      TaskCompletionHandlerFactory taskCompletionHandlerFactory) {
         finishedTaskListeners.put(taskClass, taskCompletionHandlerFactory);
@@ -22,11 +20,5 @@ public class MasterConfig {
     public Map<Class, TaskCompletionHandlerFactory> getFinishedTaskListeners() {
         return finishedTaskListeners;
     }
-
-    public long getUnassignedTaskReschedulerWaitTimeMs() {
-        return unassignedTaskReschedulerWaitTimeMs;
-    }
-
-
 
 }
