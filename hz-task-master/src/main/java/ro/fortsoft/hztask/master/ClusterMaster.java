@@ -1,7 +1,6 @@
 package ro.fortsoft.hztask.master;
 
 import com.google.common.eventbus.AsyncEventBus;
-import com.hazelcast.config.ClasspathXmlConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -11,10 +10,10 @@ import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.common.task.Task;
-import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.event.membership.AgentMembershipSubscriber;
 import ro.fortsoft.hztask.master.listener.ClusterMembershipListener;
 import ro.fortsoft.hztask.master.router.BalancedWorkloadRoutingStrategy;
+import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
@@ -39,10 +38,9 @@ public class ClusterMaster {
     private ClusterMasterServiceImpl clusterMasterService;
 
 
-    public ClusterMaster(MasterConfig masterConfig, String configXmlFileName) {
-        Config cfg = new ClasspathXmlConfig(configXmlFileName);
+    public ClusterMaster(MasterConfig masterConfig, Config hazelcastConfig) {
+        hzInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
 
-        hzInstance = Hazelcast.newHazelcastInstance(cfg);
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.MASTER);
 
         CommunicationService communicationService = new CommunicationService(hzInstance);
