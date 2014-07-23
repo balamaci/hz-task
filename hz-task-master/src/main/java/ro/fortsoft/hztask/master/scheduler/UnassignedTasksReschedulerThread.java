@@ -12,14 +12,14 @@ public class UnassignedTasksReschedulerThread extends Thread {
 
     private ClusterDistributionService clusterDistributionService;
 
-    private final long millisBetweenRuns;
+    private final long millisBetweenRuns = 5000;
 
     private static final Logger log = LoggerFactory.getLogger(UnassignedTasksReschedulerThread.class);
 
     public UnassignedTasksReschedulerThread(ClusterDistributionService clusterDistributionService,
                                             MasterConfig masterConfig) {
         this.clusterDistributionService = clusterDistributionService;
-        this.millisBetweenRuns = masterConfig.getUnassignedTaskReschedulerWaitTimeMs();
+//        this.millisBetweenRuns = masterConfig.getUnassignedTaskReschedulerWaitTimeMs();
     }
 
     @Override

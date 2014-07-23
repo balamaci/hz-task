@@ -1,4 +1,4 @@
-package ro.fortsoft.hztask.callback;
+package ro.fortsoft.hztask.op;
 
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.op.master.AbstractMasterOp;
