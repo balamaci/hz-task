@@ -10,6 +10,8 @@ import java.util.Map;
  */
 public class MasterConfig {
 
+    private TaskCompletionHandlerFactory defaultHandlerFactory;
+
     private Map<Class, TaskCompletionHandlerFactory> finishedTaskListeners = new HashMap<>();
 
     public void registerFinishedTaskCompletionListenerFactory(Class taskClass,
@@ -21,4 +23,11 @@ public class MasterConfig {
         return finishedTaskListeners;
     }
 
+    public void setDefaultHandlerFactory(TaskCompletionHandlerFactory defaultHandlerFactory) {
+        this.defaultHandlerFactory = defaultHandlerFactory;
+    }
+
+    public TaskCompletionHandlerFactory getDefaultHandlerFactory() {
+        return defaultHandlerFactory;
+    }
 }

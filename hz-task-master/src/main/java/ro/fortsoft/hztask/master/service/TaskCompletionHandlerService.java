@@ -58,6 +58,10 @@ public class TaskCompletionHandlerService {
             return Optional.fromNullable(taskCompletionHandler);
         }
 
+        if(masterConfig.getDefaultHandlerFactory() != null) {
+            TaskCompletionHandler taskCompletionHandler = masterConfig.getDefaultHandlerFactory().getObject();
+            return Optional.fromNullable(taskCompletionHandler);
+        }
         return Optional.absent();
     }
 
