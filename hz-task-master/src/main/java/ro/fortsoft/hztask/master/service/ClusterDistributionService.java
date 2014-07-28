@@ -66,6 +66,10 @@ public class ClusterDistributionService {
         log.info("Adding task={} to Map", task);
         tasks.set(taskKey, task);
 
+        if(statisticsService.getBacklogTaskCount(task.getClass().getName()) == 0) {
+            startTaskDistributionThread();
+        }
+
         statisticsService.incBacklogTask(task.getClass().getName());
     }
 
@@ -78,8 +82,12 @@ public class ClusterDistributionService {
 
         log.info("Rescheduling task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
         tasks.set(taskKey, task);
+
         if (!clusterInstanceId.equals(LOCAL_MASTER_UUID)) {
             statisticsService.incSubmittedTasks(task.getClass().getName(), clusterInstanceId);
+            statisticsService.decBacklogTask(task.getClass().getName());
+        } else {
+            statisticsService.incBacklogTask(task.getClass().getName());
         }
     }
 
@@ -93,6 +101,8 @@ public class ClusterDistributionService {
 
             log.info("Unassigning task={}", task);
             tasks.set(taskKey, task);
+
+            statisticsService.incBacklogTask(task.getClass().getName());
         }
     }
 
