@@ -185,8 +185,9 @@ public class ClusterDistributionService {
         Predicate notAssigned = Predicates.notEqual("clusterInstanceUuid", LOCAL_MASTER_UUID);
 
         Predicate selectionPredicate = Predicates.and(oldTaskPredicate, notAssigned);
+        int batchSize = 100;
         for (; ; ) {
-            boolean moreTasksFound = unassignMatchedTasks(100, selectionPredicate);
+            boolean moreTasksFound = unassignMatchedTasks(batchSize, selectionPredicate);
             if(! moreTasksFound) {
                 break;
             }

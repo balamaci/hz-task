@@ -18,7 +18,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <slf4j.version>1.7.7</slf4j.version>
-        <hazelcast.version>3.2.3</hazelcast.version>
+        <hazelcast.version>3.2.6</hazelcast.version>
         <guava.version>17.0</guava.version>
     </properties>
 
