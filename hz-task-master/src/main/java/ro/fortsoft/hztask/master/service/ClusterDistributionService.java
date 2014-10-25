@@ -66,9 +66,9 @@ public class ClusterDistributionService {
         log.info("Adding task={} to Map", task);
         tasks.set(taskKey, task);
 
-        if(statisticsService.getBacklogTaskCount(task.getClass().getName()) == 0) {
+//        if(statisticsService.getBacklogTaskCount(task.getClass().getName()) == 0) { //why only for 0?
             startTaskDistributionThread();
-        }
+//        }
 
         statisticsService.incBacklogTask(task.getClass().getName());
     }
