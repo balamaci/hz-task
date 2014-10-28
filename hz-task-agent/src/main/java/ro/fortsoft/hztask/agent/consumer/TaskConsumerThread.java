@@ -95,6 +95,8 @@ public class TaskConsumerThread extends Thread {
             } catch (InterruptedException e) {
                 log.info("TaskConsumer Thread received an interrupt signal, stopping");
                 break;
+            } catch (Throwable t) {
+                log.info("TaskConsumer Thread encountered unexpected exception", t);
             }
         }
     }
