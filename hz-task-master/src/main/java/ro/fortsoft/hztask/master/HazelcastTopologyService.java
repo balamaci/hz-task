@@ -7,9 +7,11 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.MemberType;
 import ro.fortsoft.hztask.master.event.membership.AgentJoinedEvent;
 import ro.fortsoft.hztask.master.service.CommunicationService;
+import ro.fortsoft.hztask.master.util.NamesUtil;
 import ro.fortsoft.hztask.op.GetMemberTypeClusterOp;
 import ro.fortsoft.hztask.op.agent.AnnounceMasterAndSignalStartWorkOp;
 import ro.fortsoft.hztask.op.agent.AskAgentReadyOp;
@@ -31,21 +33,19 @@ public class HazelcastTopologyService {
 
     private final CommunicationService communicationService;
 
-    private CopyOnWriteArraySet<Member> agents;
+    private final CopyOnWriteArraySet<Member> agents = new CopyOnWriteArraySet<>();
 
-    private HazelcastInstance hzInstance;
-
-    private static final Logger log = LoggerFactory.getLogger(HazelcastTopologyService.class);
+    private final HazelcastInstance hzInstance;
 
     private static final int MAX_ASK_READY_ATTEMPTS = 5;
 
-    private AsyncEventBus eventBus;
+    private final AsyncEventBus eventBus;
 
+    private static final Logger log = LoggerFactory.getLogger(HazelcastTopologyService.class);
 
     public HazelcastTopologyService(HazelcastInstance hzInstance, AsyncEventBus eventBus,
                                     CommunicationService communicationService) {
         this.hzInstance = hzInstance;
-        agents = new CopyOnWriteArraySet<>();
         this.eventBus = eventBus;
         this.communicationService = communicationService;
     }
@@ -98,6 +98,10 @@ public class HazelcastTopologyService {
 
     public void addAgent(Member member) {
         agents.add(member);
+        String name = member.getStringAttribute(HzKeysConstants.AGENT_NAME_PROPERTY);
+        if(name != null) {
+            NamesUtil.addMember(member.getUuid(), name);
+        }
     }
 
     public void removeAgent(Member member) {

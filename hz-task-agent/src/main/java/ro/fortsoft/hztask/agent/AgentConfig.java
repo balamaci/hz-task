@@ -12,6 +12,8 @@ public class AgentConfig {
 
     private Map<Class, TaskProcessorFactory> processorRegistry = new HashMap<>();
 
+    private String name;
+
     private int maxRunningTasks = 5;
 
     public void registerTaskProcessorFactory(Class taskClass, TaskProcessorFactory taskProcessorFactory) {
@@ -26,5 +28,11 @@ public class AgentConfig {
         return maxRunningTasks;
     }
 
+    public String getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name = name;
+    }
 }

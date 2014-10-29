@@ -9,6 +9,7 @@ import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
+import ro.fortsoft.hztask.master.util.NamesUtil;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -39,7 +40,8 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     @Override
     public void handleFinishedTask(TaskKey taskKey, Serializable response, String agentUuid) {
-        log.info("Task with id {} finished on {}", taskKey.getTaskId(), agentUuid);
+        log.info("Task with id {} finished on {}", taskKey.getTaskId(),
+                NamesUtil.toLogFormat(agentUuid));
         Task task = clusterDistributionService.finishedTask(taskKey, agentUuid, false);
 
         taskCompletionHandlerService.onSuccess(task, response);
@@ -47,7 +49,8 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
 
     @Override
     public void handleFailedTask(TaskKey taskKey, Throwable exception, String agentUuid) {
-        log.info("Task with id {} failed on {}", taskKey.getTaskId(), agentUuid);
+        log.info("Task with id {} failed on {}", taskKey.getTaskId(),
+                NamesUtil.toLogFormat(agentUuid));
         Task task = clusterDistributionService.finishedTask(taskKey, agentUuid, true);
 
         taskCompletionHandlerService.onFail(task, exception);

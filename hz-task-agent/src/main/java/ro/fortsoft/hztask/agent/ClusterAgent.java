@@ -44,6 +44,10 @@ public class ClusterAgent  {
     public ClusterAgent(AgentConfig config, Config hzConfig) {
         log.info("Starting agent ...");
 
+        if(config.getName() != null) {
+            hzConfig.setProperty(HzKeysConstants.AGENT_NAME_PROPERTY, config.getName());
+        }
+
         HazelcastInstance hzInstance = Hazelcast.newHazelcastInstance(hzConfig);
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.AGENT);
 

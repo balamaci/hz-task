@@ -18,6 +18,7 @@ import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.scheduler.TasksDistributionThread;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.statistics.TaskLogKeeper;
+import ro.fortsoft.hztask.master.util.NamesUtil;
 
 import java.util.Collection;
 import java.util.Set;
@@ -89,10 +90,12 @@ public class ClusterDistributionService {
 
         if (!clusterInstanceId.equals(LOCAL_MASTER_UUID)) {
             if(oldClusterInstanceAssignedToTask.equals(LOCAL_MASTER_UUID)) {
-                log.info("Assigning task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
+                log.info("Assigning task={} to run on Agent {}", task, NamesUtil.
+                        toLogFormat(task.getClusterInstanceUuid()));
                 taskLogKeeper.taskAssigned(taskKey.getTaskId(), clusterInstanceId);
             } else {
-                log.info("Rescheduling task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
+                log.info("Rescheduling task={} to run on Agent {}", task, NamesUtil.
+                        toLogFormat(task.getClusterInstanceUuid()));
                 taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
             }
 
@@ -101,7 +104,7 @@ public class ClusterDistributionService {
 
             taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
         } else { //we're unassigning a task
-            log.info("Unassigned task={}", task, task.getClusterInstanceUuid());
+            log.info("Unassigned task={}", task);
 
             statisticsService.incBacklogTask(task.getClass().getName());
             taskLogKeeper.taskUnassigned(taskKey.getTaskId());

@@ -5,6 +5,8 @@ package ro.fortsoft.hztask.common;
  */
 public class HzKeysConstants {
 
+    public static final String AGENT_NAME_PROPERTY = "ro.fortsoft.hztask.name";
+
     public static final String USER_CONTEXT_MEMBER_TYPE = "ro.fortsoft.member_type";
     public static final String USER_CONTEXT_CLUSTER_MASTER_SERVICE = "ro.fortsoft.clusterMasterService";
     public static final String USER_CONTEXT_CLUSTER_AGENT_SERVICE = "ro.fortsoft.clusterAgentService";
