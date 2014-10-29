@@ -17,6 +17,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <jdk.compiler>1.7</jdk.compiler>
+
         <slf4j.version>1.7.7</slf4j.version>
         <hazelcast.version>3.2.6</hazelcast.version>
         <guava.version>17.0</guava.version>
@@ -28,7 +31,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>15.0</version>
+            <version>${guava.version}</version>
         </dependency>
 
         <!-- Logs -->
@@ -55,8 +58,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>2.5.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${jdk.compiler}</source>
+                    <target>${jdk.compiler}</target>
                     <encoding>UTF-8</encoding>
                     <showWarnings>true</showWarnings>
                     <showDeprecation>true</showDeprecation>
