@@ -44,14 +44,16 @@ public class ClusterAgent  {
     public ClusterAgent(AgentConfig config, Config hzConfig) {
         log.info("Starting agent ...");
 
-        if(config.getName() != null) {
-            hzConfig.setProperty(HzKeysConstants.AGENT_NAME_PROPERTY, config.getName());
+        String name = config.getName();
+        if(name != null) {
+            hzConfig.getMemberAttributeConfig().setStringAttribute(HzKeysConstants.AGENT_NAME_PROPERTY, name);
         }
 
         HazelcastInstance hzInstance = Hazelcast.newHazelcastInstance(hzConfig);
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.AGENT);
 
-        log.info("Starting Agent with ClusterID {}", hzInstance.getCluster().getLocalMember().getUuid());
+        log.info("Starting Agent with ClusterID {} - Name:\"{}\"",
+                hzInstance.getCluster().getLocalMember().getUuid(), name);
 
         clusterAgentService = new ClusterAgentService(config, eventBus);
         clusterAgentService.setHzInstance(hzInstance);
