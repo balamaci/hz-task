@@ -162,7 +162,7 @@ public class ClusterDistributionService {
                 + statisticsService.getTaskFailedCountForMember(agentUuid);
 
         long remaining = totalSubmitted - totalProcessed;
-        log.info("Found remaining tasks {} for {}", remaining, agentUuid);
+        log.info("Found {} remaining tasks for {}", remaining, NamesUtil.toLogFormat(agentUuid));
 
         if (remaining < 10) {
             startTaskDistributionThread();
