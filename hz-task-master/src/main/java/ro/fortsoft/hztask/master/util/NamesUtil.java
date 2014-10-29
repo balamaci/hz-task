@@ -27,7 +27,7 @@ public class NamesUtil {
     public static String toLogFormat(String uuid) {
         String name = getName(uuid);
         if(name == null) {
-            return uuid;
+            name = "????";
         }
 
         return name + "(" + uuid.split("-", 1)[0] + ")";
