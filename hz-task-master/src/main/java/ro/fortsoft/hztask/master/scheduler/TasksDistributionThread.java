@@ -21,8 +21,10 @@ public class TasksDistributionThread extends Thread {
 
     private double lastThroughput = -1;
 
-    private int windowSize = 10;
+    private static final int INIT_WINDOW_SIZE = 10;
     private static final int MAX_WINDOW_SIZE = 100;
+
+    private int windowSize = INIT_WINDOW_SIZE;
 
     private IStatisticsService statisticsService;
 
@@ -107,7 +109,7 @@ public class TasksDistributionThread extends Thread {
 
     private void incWindowSize() {
         if(windowSize == 0) {
-            windowSize = 1;
+            windowSize = INIT_WINDOW_SIZE;
         }
 
         if(windowSize < MAX_WINDOW_SIZE) {
