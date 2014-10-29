@@ -30,7 +30,7 @@ public class NamesUtil {
             name = "????";
         }
 
-        return name + "(" + uuid.split("-", 1)[0] + ")";
+        return name + "(" + uuid.substring(0, 8) + ")";
     }
 
 }
