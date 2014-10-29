@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.master.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
+import ro.fortsoft.hztask.master.util.NamesUtil;
 
 /**
  * @author Serban Balamaci
@@ -44,7 +45,8 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
                     getTaskFailedCountForMember(memberUuid) / totalSubmitted; // 0.01% is good, 1 means 100% failed
 
             double actualRemainingWork = remainingWorkload + remainingWorkload * failureFactor;
-            log.info("Remaining work {} for Member {}", String.format("%.2f", actualRemainingWork), member);
+            log.info("Remaining work {} for Member {}", String.format("%.2f", actualRemainingWork),
+                    NamesUtil.toLogFormat(memberUuid));
             //the biggest the failure factor the most
             if(actualRemainingWork < min) {
                 min = actualRemainingWork;

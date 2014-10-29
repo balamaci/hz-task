@@ -106,6 +106,10 @@ public class TasksDistributionThread extends Thread {
     }
 
     private void incWindowSize() {
+        if(windowSize == 0) {
+            windowSize = 1;
+        }
+
         if(windowSize < MAX_WINDOW_SIZE) {
             windowSize = (int) (windowSize * 1.2);
         }
