@@ -17,6 +17,7 @@ import ro.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
 import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.scheduler.TasksDistributionThread;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
+import ro.fortsoft.hztask.master.statistics.TaskLogKeeper;
 
 import java.util.Collection;
 import java.util.Set;
@@ -38,6 +39,7 @@ public class ClusterDistributionService {
     private IStatisticsService statisticsService;
 
     private TasksDistributionThread tasksDistributionThread;
+    private TaskLogKeeper taskLogKeeper;
 
     //
     private AtomicLong latestTaskCounter;
@@ -66,28 +68,43 @@ public class ClusterDistributionService {
         log.info("Adding task={} to Map", task);
         tasks.set(taskKey, task);
 
+        statisticsService.incBacklogTask(task.getClass().getName());
+        taskLogKeeper.taskReceived(taskKey.getTaskId());
+
 //        if(statisticsService.getBacklogTaskCount(task.getClass().getName()) == 0) { //why only for 0?
             startTaskDistributionThread();
 //        }
 
-        statisticsService.incBacklogTask(task.getClass().getName());
     }
 
     public void rescheduleTask(TaskKey taskKey) {
         Task task = tasks.get(taskKey);
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
+        String oldClusterInstanceAssignedToTask = task.getClusterInstanceUuid();
         String clusterInstanceId = getClusterInstanceToRunOn();
         task.setClusterInstanceUuid(clusterInstanceId);
 
-        log.info("Rescheduling task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
         tasks.set(taskKey, task);
 
         if (!clusterInstanceId.equals(LOCAL_MASTER_UUID)) {
+            if(oldClusterInstanceAssignedToTask.equals(LOCAL_MASTER_UUID)) {
+                log.info("Assigning task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
+                taskLogKeeper.taskAssigned(taskKey.getTaskId(), clusterInstanceId);
+            } else {
+                log.info("Rescheduling task={} to run on AgentID {}", task, task.getClusterInstanceUuid());
+                taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
+            }
+
             statisticsService.incSubmittedTasks(task.getClass().getName(), clusterInstanceId);
             statisticsService.decBacklogTask(task.getClass().getName());
-        } else {
+
+            taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
+        } else { //we're unassigning a task
+            log.info("Unassigned task={}", task, task.getClusterInstanceUuid());
+
             statisticsService.incBacklogTask(task.getClass().getName());
+            taskLogKeeper.taskUnassigned(taskKey.getTaskId());
         }
     }
 
@@ -126,8 +143,10 @@ public class ClusterDistributionService {
         Task task = tasks.remove(taskKey);
         if (taskFailed) {
             statisticsService.incTaskFailedCounter(task.getClass().getName(), agentUuid);
+            taskLogKeeper.taskFinishedFailure(taskKey.getTaskId());
         } else {
             statisticsService.incTaskFinishedCounter(task.getClass().getName(), agentUuid);
+            taskLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
         }
 
         doAfterTaskFinished(agentUuid);
@@ -179,7 +198,13 @@ public class ClusterDistributionService {
         return tasks.keySet(predicate);
     }
 
-
+    /**
+     * Looks for tasks and unassignes them.
+     * Useful in case the master went down but the tasks list is rebuilt from the active masters
+     *
+     * @param lastKey a key to reference when the master went back up so we don't reassign task
+     *                that were submitted.
+     */
     public void unassignOlderTasks(long lastKey) {
         Predicate oldTaskPredicate = Predicates.lessThan("internalCounter", lastKey);
         Predicate notAssigned = Predicates.notEqual("clusterInstanceUuid", LOCAL_MASTER_UUID);
@@ -194,6 +219,10 @@ public class ClusterDistributionService {
         }
     }
 
+    /**
+     * Reschedule an agents tasks - useful if the agent went down
+     * @param agentUuid agentUuid
+     */
     public void rescheduleAgentTasks(String agentUuid) {
         Predicate selectionPredicate = Predicates.equal("clusterInstanceUuid", agentUuid);
 
@@ -263,6 +292,10 @@ public class ClusterDistributionService {
 
     public HazelcastTopologyService getHazelcastTopologyService() {
         return hazelcastTopologyService;
+    }
+
+    public void setTaskLogKeeper(TaskLogKeeper taskLogKeeper) {
+        this.taskLogKeeper = taskLogKeeper;
     }
 
     public boolean isShuttingDown() {

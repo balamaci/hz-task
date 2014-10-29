@@ -1,5 +1,9 @@
 package ro.fortsoft.hztask.master;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.eventbus.AsyncEventBus;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
@@ -17,7 +21,10 @@ import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
+import ro.fortsoft.hztask.master.statistics.TaskActivityEntry;
+import ro.fortsoft.hztask.master.statistics.TaskLogKeeper;
 
+import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Executors;
 
@@ -32,6 +39,8 @@ public class ClusterMaster {
 
     private ClusterDistributionService clusterDistributionService;
     private HazelcastTopologyService hazelcastTopologyService;
+
+    private final TaskLogKeeper taskLogKeeper = new TaskLogKeeper();
 
     private AsyncEventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
 
@@ -49,6 +58,7 @@ public class ClusterMaster {
                 new CodahaleStatisticsService());
         clusterDistributionService.setRoutingStrategy(new BalancedWorkloadRoutingStrategy(hazelcastTopologyService,
                 clusterDistributionService.getStatisticsService()));
+        clusterDistributionService.setTaskLogKeeper(taskLogKeeper);
 
         checkNoOtherMasterClusterAmongMembers();
 
@@ -105,6 +115,24 @@ public class ClusterMaster {
                 hazelcastTopologyService.callbackWhenAgentReady(member, 0);
             }
         }
+    }
+
+
+    public Multimap<String, TaskActivityEntry> getUnfinishedTasksActivityLog(int startedSecsAgo) {
+        ImmutableListMultimap<String, TaskActivityEntry> logData = taskLogKeeper.getDataCopy();
+        Date now = new Date();
+        long agoMillis = now.getTime() - startedSecsAgo * 1000;
+
+        ArrayListMultimap<String, TaskActivityEntry> filteredData = ArrayListMultimap.create();
+
+        for(String taskId : logData.keySet()) {
+            ImmutableList<TaskActivityEntry> entries = logData.get(taskId);
+            if(entries.get(0).getEventDate().getTime() < agoMillis) {
+                filteredData.putAll(taskId, entries);
+            }
+        }
+
+        return filteredData;
     }
 
 }
