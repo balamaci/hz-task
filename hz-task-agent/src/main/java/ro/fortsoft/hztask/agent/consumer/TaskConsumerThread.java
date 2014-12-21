@@ -89,7 +89,7 @@ public class TaskConsumerThread extends Thread {
                     }
                 }
                 if (!foundTask) {
-                    log.info("No Tasks found to process, sleeping a while...");
+                    log.debug("No Tasks found to process, sleeping a while...");
                     Thread.sleep(2000);
                 }
             } catch (InterruptedException e) {
