@@ -27,10 +27,10 @@ public class CodahaleStatisticsService implements IStatisticsService {
 
     @Override
     public void incTaskFailedCounter(String taskName, String memberUuid) {
-        Counter tasks = metrics.counter("failed-tasks-type," + taskName + "," + memberUuid);
+        Counter tasksFailed = metrics.counter("failed-tasks-type," + taskName + "," + memberUuid);
         Counter byMember = metrics.counter("failed-tasks-member," + memberUuid);
 
-        tasks.inc();
+        tasksFailed.inc();
         byMember.inc();
     }
 
@@ -38,6 +38,12 @@ public class CodahaleStatisticsService implements IStatisticsService {
     public long getTaskFailedCountForMember(String memberUuid) {
         Counter byMember = metrics.counter("failed-tasks-member," + memberUuid);
         return byMember.getCount();
+    }
+
+    @Override
+    public long getTaskFailedCountForMember(String taskName, String memberUuid) {
+        Counter tasksFailed = metrics.counter("failed-tasks-type," + taskName + "," + memberUuid);
+        return tasksFailed.getCount();
     }
 
     @Override

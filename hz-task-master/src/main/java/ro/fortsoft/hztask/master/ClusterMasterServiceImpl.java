@@ -59,7 +59,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
     public void shutdown() {
         shuttingDown = true;
 
-        clusterDistributionService.stop();
+        clusterDistributionService.shutdown();
         HazelcastTopologyService hazelcastTopologyService = clusterDistributionService.getHazelcastTopologyService();
         Collection<Member> members = hazelcastTopologyService.getAgentsCopy();
         for(Member member : members) {

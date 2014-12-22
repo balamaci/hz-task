@@ -2,6 +2,7 @@ package ro.fortsoft.hztask.master.router;
 
 import com.google.common.base.Optional;
 import com.hazelcast.core.Member;
+import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.master.HazelcastTopologyService;
 
 /**
@@ -18,7 +19,7 @@ public class RoundRobinRoutingStrategy implements RoutingStrategy {
     }
 
     @Override
-    public synchronized Optional<Member> getMemberToRunOn() {
+    public synchronized Optional<Member> getMemberToRunOn(Task task) {
         if(hazelcastTopologyService.getAgentsCount() == 0) {
             return Optional.absent();
         }

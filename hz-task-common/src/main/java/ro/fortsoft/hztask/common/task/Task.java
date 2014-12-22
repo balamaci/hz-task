@@ -28,6 +28,10 @@ public abstract class Task<I, O> implements Serializable {
         creationDate = System.currentTimeMillis();
     }
 
+    public String getTaskName() {
+        return getClass().getName();
+    }
+
     public String getId() {
         return id;
     }

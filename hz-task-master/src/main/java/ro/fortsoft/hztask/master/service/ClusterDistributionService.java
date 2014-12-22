@@ -83,7 +83,7 @@ public class ClusterDistributionService {
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
         String oldClusterInstanceAssignedToTask = task.getClusterInstanceUuid();
-        String clusterInstanceId = getClusterInstanceToRunOn();
+        String clusterInstanceId = getClusterInstanceToRunOn(task);
         task.setClusterInstanceUuid(clusterInstanceId);
 
         tasks.set(taskKey, task);
@@ -128,11 +128,12 @@ public class ClusterDistributionService {
 
     /**
      * Uses the RoutingStrategy to look for the next agentUuid where
+     * @param task the task to run
      *
      * @return the agentUuid where the next task should run
      */
-    private String getClusterInstanceToRunOn() {
-        Optional<Member> memberToRunOn = routingStrategy.getMemberToRunOn();
+    private String getClusterInstanceToRunOn(Task task) {
+        Optional<Member> memberToRunOn = routingStrategy.getMemberToRunOn(task);
 
         String executeOn = LOCAL_MASTER_UUID; //unassigned
         if (memberToRunOn.isPresent()) {
@@ -145,10 +146,10 @@ public class ClusterDistributionService {
     public Task finishedTask(TaskKey taskKey, String agentUuid, boolean taskFailed) {
         Task task = tasks.remove(taskKey);
         if (taskFailed) {
-            statisticsService.incTaskFailedCounter(task.getClass().getName(), agentUuid);
+            statisticsService.incTaskFailedCounter(task.getTaskName(), agentUuid);
             taskLogKeeper.taskFinishedFailure(taskKey.getTaskId());
         } else {
-            statisticsService.incTaskFinishedCounter(task.getClass().getName(), agentUuid);
+            statisticsService.incTaskFinishedCounter(task.getTaskName(), agentUuid);
             taskLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
         }
 
@@ -187,7 +188,7 @@ public class ClusterDistributionService {
         }
     }
 
-    public synchronized void stop() {
+    public synchronized void shutdown() {
         shuttingDown = true;
         tasksDistributionThread.interrupt();
     }

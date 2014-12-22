@@ -13,6 +13,8 @@ public interface IStatisticsService {
 
     public long getTaskFailedCountForMember(String memberUuid);
 
+    public long getTaskFailedCountForMember(String taskName, String memberUuid);
+
     public void incBacklogTask(String taskName);
 
     public void decBacklogTask(String taskName);

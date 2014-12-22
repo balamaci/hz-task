@@ -7,6 +7,9 @@ import com.google.common.collect.Multimap;
 import static ro.fortsoft.hztask.master.statistics.TaskActivityEntry.create;
 
 /**
+ * Keeps track of state transitions for tasks, doesn't play a role in the
+ * workings of task distribution, but helps debug what went wrong
+ *
  * @author Serban Balamaci
  */
 public class TaskLogKeeper {
