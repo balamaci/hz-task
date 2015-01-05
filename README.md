@@ -12,8 +12,12 @@ A **Task** is a Java object that represents a unit of work for an Agent.
 A **Task holds data**, that the **Agent** active on different machines knows how to handle.   
 
 The **Master** assigns the **Task**s to the active **Agents**, by an implementation of a **RoutingStrategy**
-   - This is done, because the **Master** can make better decisions where the next task should run for example based on the workload or success rate .  
- 
+   - This is done, because the **Master** can make better decisions where the next task should run for example based on the workload or success rate. 
+   For example if an agent loses his connections, the **Master** can reassign the task and future task of that type to another **Agent**.
+
+   - If an **Agent** leaves the cluster, the **Master** can reassign it's tasks to other  
+   
+
 To keep things simple we talk about a Master and Agents. 
 Whenever you want to submit Tasks for processing you talk to the Master.
 The job of the Master .
