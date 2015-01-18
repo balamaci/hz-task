@@ -35,9 +35,9 @@ public class ClusterMaster {
 
     private static final Logger log = LoggerFactory.getLogger(ClusterMaster.class);
 
-    private HazelcastInstance hzInstance;
+    private final HazelcastInstance hzInstance;
 
-    private ClusterDistributionService clusterDistributionService;
+    private final ClusterDistributionService clusterDistributionService;
     private HazelcastTopologyService hazelcastTopologyService;
 
     private final TaskLogKeeper taskLogKeeper = new TaskLogKeeper();
@@ -67,10 +67,7 @@ public class ClusterMaster {
         registerAlreadyPresentAgents();
         hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(eventBus));
 
-        //TODO with HZ3.3 change it to highest value retrieved by Aggregate
-        long latestTaskCounter = System.currentTimeMillis();
-        clusterDistributionService.setLatestTaskCounter(System.currentTimeMillis());
-        clusterDistributionService.unassignOlderTasks(latestTaskCounter);
+        unassignAnyPreviousTasks();
 
         TaskCompletionHandlerService taskCompletionHandlerService = new TaskCompletionHandlerService(masterConfig);
         clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
@@ -135,4 +132,10 @@ public class ClusterMaster {
         return filteredData;
     }
 
+    private void unassignAnyPreviousTasks() {
+        //TODO with HZ3.3 change it to highest value retrieved by Aggregate
+        long latestTaskCounter = System.currentTimeMillis();
+        clusterDistributionService.setLatestTaskCounter(latestTaskCounter);
+        clusterDistributionService.unassignOlderTasks(latestTaskCounter);
+    }
 }

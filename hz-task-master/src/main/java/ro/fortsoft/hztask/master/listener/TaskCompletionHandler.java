@@ -7,9 +7,9 @@ import ro.fortsoft.hztask.common.task.Task;
  */
 public abstract class TaskCompletionHandler {
 
-    public abstract void onSuccess(Task task, Object taskResult);
+    public abstract void onSuccess(Task task, Object taskResult, String agentName);
 
-    public abstract void onFail(Task task, Throwable throwable);
+    public abstract void onFail(Task task, Throwable throwable, String agentName);
 
 
 }

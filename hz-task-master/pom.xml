@@ -6,15 +6,16 @@
 
     <parent>
         <artifactId>hz-task-parent</artifactId>
-        <groupId>ro.fortsoft</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <groupId>ro.fortsoft.hztask</groupId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>hz-task-master</artifactId>
     <packaging>jar</packaging>
+    <name>HzTask Master</name>
+    <description>HzTask Master</description>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <metrics.version>3.0.1</metrics.version>
     </properties>
 
@@ -22,9 +23,9 @@
     <dependencies>
 
         <dependency>
-            <groupId>ro.fortsoft</groupId>
+            <groupId>ro.fortsoft.hztask</groupId>
             <artifactId>hz-task-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
 

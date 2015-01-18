@@ -6,12 +6,12 @@
 
     <parent>
         <artifactId>hz-task-parent</artifactId>
-        <groupId>ro.fortsoft</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <groupId>ro.fortsoft.hztask</groupId>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>hz-task-common</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <dependencies>

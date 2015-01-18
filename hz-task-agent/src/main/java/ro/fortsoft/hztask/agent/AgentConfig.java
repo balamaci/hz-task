@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Configuration class required for constructing a new Agent
+ *
  * @author Serban Balamaci
  */
 public class AgentConfig {

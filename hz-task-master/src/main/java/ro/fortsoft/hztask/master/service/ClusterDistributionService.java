@@ -207,7 +207,7 @@ public class ClusterDistributionService {
      * Useful in case the master went down but the tasks list is rebuilt from the active masters
      *
      * @param lastKey a key to reference when the master went back up so we don't reassign task
-     *                that were submitted.
+     *                that were submitted after the current master took control.
      */
     public void unassignOlderTasks(long lastKey) {
         Predicate oldTaskPredicate = Predicates.lessThan("internalCounter", lastKey);
