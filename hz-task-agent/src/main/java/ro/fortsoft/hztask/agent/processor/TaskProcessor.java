@@ -11,13 +11,13 @@ import java.io.Serializable;
  *
  * @author Serban Balamaci
  */
-public abstract class TaskProcessor<T extends Serializable> {
+public interface TaskProcessor<R extends Serializable, T extends Task> {
 
     /**
      * Method to override and implement what the task is supposed to do
      * @param task Task that holds the data
      * @return processing result
      */
-    public abstract T process(Task task);
+    public R process(T task);
 
 }

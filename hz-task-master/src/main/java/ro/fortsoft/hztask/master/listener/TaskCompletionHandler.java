@@ -5,7 +5,7 @@ import ro.fortsoft.hztask.common.task.Task;
 /**
  * @author Serban Balamaci
  */
-public abstract class TaskCompletionHandler {
+public interface TaskCompletionHandler {
 
     public abstract void onSuccess(Task task, Object taskResult, String agentName);
 
