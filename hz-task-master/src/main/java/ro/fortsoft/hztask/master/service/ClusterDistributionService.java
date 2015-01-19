@@ -69,7 +69,6 @@ public class ClusterDistributionService {
         log.info("Adding task={} to Map", task);
         tasks.set(taskKey, task);
 
-        statisticsService.incBacklogTask(task.getClass().getName());
         taskLogKeeper.taskReceived(taskKey.getTaskId());
 
 //        if(statisticsService.getBacklogTaskCount(task.getClass().getName()) == 0) { //why only for 0?
@@ -100,13 +99,13 @@ public class ClusterDistributionService {
             }
 
             statisticsService.incSubmittedTasks(task.getClass().getName(), clusterInstanceId);
-            statisticsService.decBacklogTask(task.getClass().getName());
+            statisticsService.decUnassignedTask(task.getClass().getName());
 
             taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
         } else { //we're unassigning a task
             log.info("Unassigned task={}", task);
 
-            statisticsService.incBacklogTask(task.getClass().getName());
+            statisticsService.incUnassignedTasks(task.getClass().getName());
             taskLogKeeper.taskUnassigned(taskKey.getTaskId());
         }
     }
@@ -122,7 +121,7 @@ public class ClusterDistributionService {
             log.info("Unassigning task={}", task);
             tasks.set(taskKey, task);
 
-            statisticsService.incBacklogTask(task.getClass().getName());
+            statisticsService.incUnassignedTasks(task.getClass().getName());
         }
     }
 
@@ -146,10 +145,10 @@ public class ClusterDistributionService {
     public Task finishedTask(TaskKey taskKey, String agentUuid, boolean taskFailed) {
         Task task = tasks.remove(taskKey);
         if (taskFailed) {
-            statisticsService.incTaskFailedCounter(task.getTaskName(), agentUuid);
+            statisticsService.incTaskFailedCounter(task.getTaskType(), agentUuid);
             taskLogKeeper.taskFinishedFailure(taskKey.getTaskId());
         } else {
-            statisticsService.incTaskFinishedCounter(task.getTaskName(), agentUuid);
+            statisticsService.incTaskFinishedCounter(task.getTaskType(), agentUuid);
             taskLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
         }
 
@@ -158,9 +157,9 @@ public class ClusterDistributionService {
     }
 
     private void doAfterTaskFinished(String agentUuid) {
-        long totalSubmitted = statisticsService.getSubmittedTotalTaskCount(agentUuid);
-        long totalProcessed = statisticsService.getTaskFinishedCountForMember(agentUuid)
-                + statisticsService.getTaskFailedCountForMember(agentUuid);
+        long totalSubmitted = statisticsService.getSubmittedTasks(agentUuid);
+        long totalProcessed = statisticsService.getFinishedTasks(agentUuid)
+                + statisticsService.getFailedTasks(agentUuid);
 
         long remaining = totalSubmitted - totalProcessed;
         log.info("Found {} remaining tasks for {}", remaining, NamesUtil.toLogFormat(agentUuid));

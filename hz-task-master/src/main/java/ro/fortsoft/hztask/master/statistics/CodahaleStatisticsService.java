@@ -11,94 +11,97 @@ public class CodahaleStatisticsService implements IStatisticsService {
 
 
     @Override
-    public void incTaskFinishedCounter(String taskType, String memberUuid) {
-        Counter tasks = metrics.counter("finished-tasks-type," + taskType + "," + memberUuid);
-        Counter byMember = metrics.counter("finished-tasks-member," + memberUuid);
+    public void incTaskFinishedCounter(String taskType, String agentUuid) {
+        Counter tasks = finishedTasksCounter(agentUuid);
+        Counter byMember = finishedTasksCounter(taskType, agentUuid);
 
         tasks.inc();
         byMember.inc();
     }
 
     @Override
-    public long getTaskFinishedCountForMember(String memberUuid) {
-        Counter byMember = metrics.counter("finished-tasks-member," + memberUuid);
-        return byMember.getCount();
+    public long getFinishedTasks(String taskType, String agentUuid) {
+        return finishedTasksCounter(taskType, agentUuid).getCount();
     }
 
     @Override
-    public void incTaskFailedCounter(String taskType, String memberUuid) {
-        Counter tasksFailed = metrics.counter("failed-tasks-type," + taskType + "," + memberUuid);
-        Counter byMember = metrics.counter("failed-tasks-member," + memberUuid);
+    public long getFinishedTasks(String agentUuid) {
+        return finishedTasksCounter(agentUuid).getCount();
+    }
+
+    @Override
+    public void incTaskFailedCounter(String taskType, String agentUuid) {
+        Counter tasksFailed = failedTasksCounter(taskType, agentUuid);
+        Counter byMember = failedTasksCounter(taskType, agentUuid);
 
         tasksFailed.inc();
         byMember.inc();
     }
 
     @Override
-    public long getTaskFailedCountForMember(String memberUuid) {
-        Counter byMember = metrics.counter("failed-tasks-member," + memberUuid);
-        return byMember.getCount();
+    public long getFailedTasks(String agentUuid) {
+        return failedTasksCounter(agentUuid).getCount();
     }
 
     @Override
-    public long getTaskFailedCountForMember(String taskType, String memberUuid) {
-        Counter tasksFailed = metrics.counter("failed-tasks-type," + taskType + "," + memberUuid);
-        return tasksFailed.getCount();
+    public long getFailedTasks(String taskType, String agentUuid) {
+        return failedTasksCounter(taskType, agentUuid).getCount();
     }
 
     @Override
-    public void incBacklogTask(String taskType) {
-        Counter totalBacklog = metrics.counter("backlog-tasks-total");
-        Counter tasks = metrics.counter("backlog-tasks," + taskType);
-        totalBacklog.inc();
-        tasks.inc();
-    }
+    public void incSubmittedTasks(String taskType, String agentUuid) {
+        Counter tasksType = submittedTasksCounter(taskType, agentUuid);
+        Counter byMember = submittedTasksCounter(agentUuid);
 
-    @Override
-    public void decBacklogTask(String taskType) {
-        Counter totalBacklog = metrics.counter("backlog-tasks-total");
-        Counter tasks = metrics.counter("backlog-tasks," + taskType);
-
-        totalBacklog.dec();
-        tasks.dec();
-    }
-
-    @Override
-    public long getBacklogTaskCount() {
-        Counter tasks = metrics.counter("backlog-tasks");
-        return tasks.getCount();
-    }
-
-    @Override
-    public long getBacklogTaskCount(String taskType) {
-        Counter tasks = getBacklogTaskCounter(taskType);
-        return tasks.getCount();
-    }
-
-    private Counter getBacklogTaskCounter(String taskType) {
-        return metrics.counter("backlog-tasks," + taskType);
-    }
-
-    @Override
-    public void incSubmittedTasks(String taskType, String memberUuid) {
-        Counter tasks = metrics.counter("agent-tasks-type," + taskType + "," + memberUuid);
-        Counter byMember = metrics.counter("agent-tasks-member," + memberUuid);
-
-        tasks.inc();
+        tasksType.inc();
         byMember.inc();
     }
 
     @Override
-    public long getSubmittedTotalTaskCount(String memberUuid) {
-        Counter byMember = metrics.counter("agent-tasks-member," + memberUuid);
-        return byMember.getCount();
+    public long getSubmittedTasks(String agentUuid) {
+        return submittedTasksCounter(agentUuid).getCount();
     }
 
     @Override
-    public long getSubmittedTaskCount(String taskType, String agentUuid) {
-        Counter tasks = metrics.counter("agent-tasks-type," + taskType + "," + agentUuid);
-        Counter byMember = metrics.counter("agent-tasks-member," + agentUuid);
-        return byMember.getCount();
+    public long getSubmittedTasks(String taskType, String agentUuid) {
+        return submittedTasksCounter(taskType, agentUuid).getCount();
     }
 
+    @Override
+    public void incUnassignedTasks(String taskType) {
+        unassignedTasksCounter(taskType).inc();
+    }
+
+    @Override
+    public void decUnassignedTask(String taskType) {
+        unassignedTasksCounter(taskType).dec();
+    }
+
+    private Counter unassignedTasksCounter(String taskType) {
+        return metrics.counter("unassigned-tasks," + taskType);
+    }
+
+    private Counter failedTasksCounter(String taskType, String agentUuid) {
+        return metrics.counter("failed-tasks-type-agent," + taskType + "," + agentUuid);
+    }
+
+    private Counter failedTasksCounter(String agentUuid) {
+        return metrics.counter("failed-tasks-agent," + agentUuid);
+    }
+
+    private Counter finishedTasksCounter(String taskType, String agentUuid) {
+        return metrics.counter("finished-tasks-type-agent," + taskType + "," + agentUuid);
+    }
+
+    private Counter finishedTasksCounter(String agentUuid) {
+        return metrics.counter("finished-tasks-agent," + agentUuid);
+    }
+
+    private Counter submittedTasksCounter(String taskType, String agentUuid) {
+        return metrics.counter("submitted-tasks-type-agent," + taskType + "," + agentUuid);
+    }
+
+    private Counter submittedTasksCounter(String agentUuid) {
+        return metrics.counter("submitted-tasks-agent," + agentUuid);
+    }
 }

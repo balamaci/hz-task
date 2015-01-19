@@ -94,7 +94,7 @@ public class TasksDistributionThread extends Thread {
     private long getTotalSubmittedTasks(Collection<Member> members) {
         long totalSubmittedTasks = 0;
         for(Member member : members) {
-            totalSubmittedTasks += statisticsService.getSubmittedTotalTaskCount(member.getUuid());
+            totalSubmittedTasks += statisticsService.getSubmittedTasks(member.getUuid());
         }
         return totalSubmittedTasks;
     }
@@ -102,7 +102,7 @@ public class TasksDistributionThread extends Thread {
     private long getTotalFinishedTasks(Collection<Member> members) {
         long totalFinishedTasks = 0;
         for(Member member : members) {
-            totalFinishedTasks += statisticsService.getTaskFinishedCountForMember(member.getUuid());
+            totalFinishedTasks += statisticsService.getFinishedTasks(member.getUuid());
         }
         return totalFinishedTasks;
     }

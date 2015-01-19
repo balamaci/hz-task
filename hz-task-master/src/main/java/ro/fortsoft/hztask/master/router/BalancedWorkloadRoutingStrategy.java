@@ -36,11 +36,11 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
         for(Member member : hazelcastTopologyService.getAgentsCopy()) {
             String memberUuid = member.getUuid();
             long tasksOfSameTypeSubmitted = statisticsService.
-                    getSubmittedTaskCount(task.getTaskType(), memberUuid);
-            long totalTasksSubmitted = statisticsService.getSubmittedTotalTaskCount(memberUuid);
+                    getSubmittedTasks(task.getTaskType(), memberUuid);
+            long totalTasksSubmitted = statisticsService.getSubmittedTasks(memberUuid);
 
-            long totalProcessedOnMember = statisticsService.getTaskFinishedCountForMember(memberUuid)
-                    + statisticsService.getTaskFailedCountForMember(memberUuid);
+            long totalProcessedOnMember = statisticsService.getFinishedTasks(memberUuid)
+                    + statisticsService.getFailedTasks(memberUuid);
 
             if(tasksOfSameTypeSubmitted == 0 || totalTasksSubmitted == 0) { //has no work, just joined
                 return Optional.of(member);
@@ -50,7 +50,7 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
 
             //failureFactor : 0.01% is good, 1 means 100% failed
             double failureFactorForTaskType = (double) statisticsService.
-                    getTaskFailedCountForMember(task.getTaskType(), memberUuid) / tasksOfSameTypeSubmitted;
+                    getFailedTasks(task.getTaskType(), memberUuid) / tasksOfSameTypeSubmitted;
 
             //if remainingWork is small => member chosen so we need to use 1 / failurefactor
             if(remainingWorkloadTotal == 0) { //next formula would not take into account failure ratio
