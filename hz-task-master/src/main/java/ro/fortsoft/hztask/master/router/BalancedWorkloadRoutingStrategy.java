@@ -56,7 +56,11 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
             if(remainingWorkloadTotal == 0) { //next formula would not take into account failure ratio
                 remainingWorkloadTotal = 1;
             }
-            double remainingWork = (remainingWorkloadTotal) * (1 / failureFactorForTaskType);
+            double remainingWork = remainingWorkloadTotal;
+
+            if(failureFactorForTaskType != 0) {
+                remainingWork = remainingWork * (1 / failureFactorForTaskType);
+            }
             log.info("Remaining work {} for Member {}", String.format("%.2f", remainingWork),
                     NamesUtil.toLogFormat(memberUuid));
             //take member with lowest work load
