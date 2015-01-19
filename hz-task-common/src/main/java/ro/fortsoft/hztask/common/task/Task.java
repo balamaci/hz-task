@@ -32,6 +32,16 @@ public abstract class Task<I, O> implements Serializable {
         return getClass().getName();
     }
 
+    /**
+     * Used in the routing strategy to determine the failure ratio of tasks with certain types and avoid
+     * assigning tasks of the same type to members that have high failure ratios
+     * for that type.
+     * @return
+     */
+    public String getTaskType() {
+        return getClass().getName();
+    }
+
     public String getId() {
         return id;
     }

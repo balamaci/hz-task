@@ -17,10 +17,13 @@ import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.master.event.membership.AgentMembershipSubscriber;
 import ro.fortsoft.hztask.master.listener.ClusterMembershipListener;
 import ro.fortsoft.hztask.master.router.BalancedWorkloadRoutingStrategy;
+import ro.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
+import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
+import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.statistics.TaskActivityEntry;
 import ro.fortsoft.hztask.master.statistics.TaskLogKeeper;
 
@@ -56,8 +59,9 @@ public class ClusterMaster {
         hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus, communicationService);
         clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService,
                 new CodahaleStatisticsService());
-        clusterDistributionService.setRoutingStrategy(new BalancedWorkloadRoutingStrategy(hazelcastTopologyService,
-                clusterDistributionService.getStatisticsService()));
+
+        clusterDistributionService.setRoutingStrategy(getRoutingStrategy(masterConfig,
+                hazelcastTopologyService, clusterDistributionService.getStatisticsService()));
         clusterDistributionService.setTaskLogKeeper(taskLogKeeper);
 
         checkNoOtherMasterClusterAmongMembers();
@@ -76,6 +80,22 @@ public class ClusterMaster {
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_MASTER_SERVICE,
                 clusterMasterService);
 //        clusterMasterService.startUnassignedTasksReschedulerThread();
+    }
+
+    /**
+     * Gets the routing strategy RoundRobin, Balanced, based on the config from MasterConfig
+     *
+     * @param hzTopologyService hzTopologyService
+     * @param statisticsService statisticsService
+     * @return a RoutingStrategy to be used
+     */
+    private RoutingStrategy getRoutingStrategy(MasterConfig config,
+                   HazelcastTopologyService hzTopologyService, IStatisticsService statisticsService) {
+        switch (config.getRoutingStrategy()) {
+            case ROUND_ROBIN: return new RoundRobinRoutingStrategy(hzTopologyService);
+            default:
+                return new BalancedWorkloadRoutingStrategy(hzTopologyService, statisticsService);
+        }
     }
 
     private void registerMembershipListener() {

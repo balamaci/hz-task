@@ -5,26 +5,28 @@ package ro.fortsoft.hztask.master.statistics;
  */
 public interface IStatisticsService {
 
-    public void incTaskFinishedCounter(String taskName, String memberUuid);
+    public void incTaskFinishedCounter(String taskType, String memberUuid);
 
     public long getTaskFinishedCountForMember(String memberUuid);
 
-    public void incTaskFailedCounter(String taskName, String memberUuid);
+    public void incTaskFailedCounter(String taskType, String memberUuid);
 
     public long getTaskFailedCountForMember(String memberUuid);
 
-    public long getTaskFailedCountForMember(String taskName, String memberUuid);
+    public long getTaskFailedCountForMember(String taskType, String memberUuid);
 
-    public void incBacklogTask(String taskName);
+    public void incBacklogTask(String taskType);
 
-    public void decBacklogTask(String taskName);
+    public void decBacklogTask(String taskType);
 
-    public long getBacklogTaskCount(String taskName);
+    public long getBacklogTaskCount(String taskType);
 
     public long getBacklogTaskCount();
 
-    public void incSubmittedTasks(String taskName, String memberUuid);
+    public void incSubmittedTasks(String taskType, String memberUuid);
 
-    public long getSubmittedTotalTaskCount(String agentUuid);
+    public long getSubmittedTotalTaskCount(String memberUuid);
+
+    public long getSubmittedTaskCount(String taskType, String memberUuid);
 
 }

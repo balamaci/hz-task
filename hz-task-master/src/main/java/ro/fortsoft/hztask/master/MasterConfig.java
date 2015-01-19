@@ -1,6 +1,7 @@
 package ro.fortsoft.hztask.master;
 
 import ro.fortsoft.hztask.master.listener.TaskCompletionHandlerFactory;
+import ro.fortsoft.hztask.master.router.RoutingStrategy;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,6 +10,8 @@ import java.util.Map;
  * @author Serban Balamaci
  */
 public class MasterConfig {
+
+    private RoutingStrategy.Type routingStrategy = RoutingStrategy.Type.BALANCED_LOW_FAILURE_ORIENTED;
 
     private TaskCompletionHandlerFactory defaultHandlerFactory;
 
@@ -29,5 +32,13 @@ public class MasterConfig {
 
     public TaskCompletionHandlerFactory getDefaultHandlerFactory() {
         return defaultHandlerFactory;
+    }
+
+    public void setRoutingStrategy(RoutingStrategy.Type routingStrategy) {
+        this.routingStrategy = routingStrategy;
+    }
+
+    public RoutingStrategy.Type getRoutingStrategy() {
+        return routingStrategy;
     }
 }

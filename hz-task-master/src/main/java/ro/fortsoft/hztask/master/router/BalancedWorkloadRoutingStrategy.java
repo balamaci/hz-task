@@ -35,25 +35,33 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
 
         for(Member member : hazelcastTopologyService.getAgentsCopy()) {
             String memberUuid = member.getUuid();
-            long totalSubmitted = statisticsService.getSubmittedTotalTaskCount(memberUuid);
+            long tasksOfSameTypeSubmitted = statisticsService.
+                    getSubmittedTaskCount(task.getTaskType(), memberUuid);
+            long totalTasksSubmitted = statisticsService.getSubmittedTotalTaskCount(memberUuid);
 
-            long totalProcessed = statisticsService.getTaskFinishedCountForMember(memberUuid)
+            long totalProcessedOnMember = statisticsService.getTaskFinishedCountForMember(memberUuid)
                     + statisticsService.getTaskFailedCountForMember(memberUuid);
 
-            if(totalSubmitted == 0) {
+            if(tasksOfSameTypeSubmitted == 0 || totalTasksSubmitted == 0) { //has no work, just joined
                 return Optional.of(member);
             }
 
-            long remainingWorkload = totalSubmitted - totalProcessed;
-            double failureFactor = (double) statisticsService.
-                    getTaskFailedCountForMember(task.getTaskName(), memberUuid) / totalSubmitted; // 0.01% is good, 1 means 100% failed
+            long remainingWorkloadTotal = totalTasksSubmitted - totalProcessedOnMember;
 
-            double actualRemainingWork = remainingWorkload + remainingWorkload * failureFactor;
-            log.info("Remaining work {} for Member {}", String.format("%.2f", actualRemainingWork),
+            //failureFactor : 0.01% is good, 1 means 100% failed
+            double failureFactorForTaskType = (double) statisticsService.
+                    getTaskFailedCountForMember(task.getTaskType(), memberUuid) / tasksOfSameTypeSubmitted;
+
+            //if remainingWork is small => member chosen so we need to use 1 / failurefactor
+            if(remainingWorkloadTotal == 0) { //next formula would not take into account failure ratio
+                remainingWorkloadTotal = 1;
+            }
+            double remainingWork = (remainingWorkloadTotal) * (1 / failureFactorForTaskType);
+            log.info("Remaining work {} for Member {}", String.format("%.2f", remainingWork),
                     NamesUtil.toLogFormat(memberUuid));
-            //the biggest the failure factor the most
-            if(actualRemainingWork < min) {
-                min = actualRemainingWork;
+            //take member with lowest work load
+            if(remainingWork < min) {
+                min = remainingWork;
                 nextMember = Optional.of(member);
             }
         }
