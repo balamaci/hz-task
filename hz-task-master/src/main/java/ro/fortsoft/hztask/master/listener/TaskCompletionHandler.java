@@ -5,11 +5,11 @@ import ro.fortsoft.hztask.common.task.Task;
 /**
  * @author Serban Balamaci
  */
-public interface TaskCompletionHandler {
+public interface TaskCompletionHandler<T extends Task> {
 
-    public abstract void onSuccess(Task task, Object taskResult, String agentName);
+    public abstract void onSuccess(T task, Object taskResult, String agentName);
 
-    public abstract void onFail(Task task, Throwable throwable, String agentName);
+    public abstract void onFail(T task, Throwable throwable, String agentName);
 
 
 }
