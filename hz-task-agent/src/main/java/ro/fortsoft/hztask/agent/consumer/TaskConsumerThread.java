@@ -99,6 +99,7 @@ public class TaskConsumerThread extends Thread {
                 log.info("TaskConsumer Thread encountered unexpected exception", t);
             }
         }
+        log.info("TaskConsumer Thread terminated");
     }
 
     private void startProcessingTask(TaskKey taskKey,Task task) throws InterruptedException {
