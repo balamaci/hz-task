@@ -102,6 +102,7 @@ public class HazelcastTopologyService {
         if(name != null) {
             NamesUtil.addMember(member.getUuid(), name);
         }
+        log.info("Added cluster agent {}", NamesUtil.getName(member.getUuid()));
     }
 
     public void removeAgent(Member member) {
