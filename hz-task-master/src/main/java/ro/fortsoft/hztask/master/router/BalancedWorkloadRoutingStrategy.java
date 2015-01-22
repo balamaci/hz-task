@@ -41,7 +41,6 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
 
             long totalProcessedOnMember = statisticsService.getFinishedTasks(memberUuid)
                     + statisticsService.getFailedTasks(memberUuid);
-
             if(tasksOfSameTypeSubmitted == 0 || totalTasksSubmitted == 0) { //has no work, just joined
                 return Optional.of(member);
             }
@@ -61,7 +60,7 @@ public class BalancedWorkloadRoutingStrategy implements RoutingStrategy {
             if(failureFactorForTaskType != 0) {
                 remainingWork = remainingWork * (1 / failureFactorForTaskType);
             }
-            log.info("Remaining work {}, failureRate={} for Member {}", remainingWorkloadTotal,
+            log.debug("Remaining work {}, failureRate={} for Member {}", remainingWorkloadTotal,
                     String.format("%.2f", failureFactorForTaskType), NamesUtil.toLogFormat(memberUuid));
             //take member with lowest work load
             if(remainingWork < min) {

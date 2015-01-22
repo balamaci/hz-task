@@ -20,12 +20,13 @@ public class RoundRobinRoutingStrategy implements RoutingStrategy {
 
     @Override
     public synchronized Optional<Member> getMemberToRunOn(Task task) {
-        if(hazelcastTopologyService.getAgentsCount() == 0) {
+        int numberOfAgents = hazelcastTopologyService.getAgentsCount();
+        if(numberOfAgents == 0) {
             return Optional.absent();
         }
 
         roundRobinCounter ++;
-        roundRobinCounter = roundRobinCounter % hazelcastTopologyService.getAgentsCount();
+        roundRobinCounter = roundRobinCounter % numberOfAgents;
 
         return Optional.of(hazelcastTopologyService.getAgentsCopy().get(roundRobinCounter));
     }

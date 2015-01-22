@@ -71,7 +71,7 @@ public class ClusterDistributionService {
 
         taskLogKeeper.taskReceived(taskKey.getTaskId());
 
-//        if(statisticsService.getBacklogTaskCount(task.getClass().getName()) == 0) { //why only for 0?
+//        if(statisticsService.getBacklogTaskCount(task.getTaskType()) == 0) { //why only for 0?
             startTaskDistributionThread();
 //        }
 
@@ -98,14 +98,14 @@ public class ClusterDistributionService {
                 taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
             }
 
-            statisticsService.incSubmittedTasks(task.getClass().getName(), clusterInstanceId);
-            statisticsService.decUnassignedTask(task.getClass().getName());
+            statisticsService.incSubmittedTasks(task.getTaskType(), clusterInstanceId);
+            statisticsService.decUnassignedTask(task.getTaskType());
 
             taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
         } else { //we're unassigning a task
             log.info("Unassigned task={}", task);
 
-            statisticsService.incUnassignedTasks(task.getClass().getName());
+            statisticsService.incUnassignedTasks(task.getTaskType());
             taskLogKeeper.taskUnassigned(taskKey.getTaskId());
         }
     }
@@ -121,7 +121,7 @@ public class ClusterDistributionService {
             log.info("Unassigning task={}", task);
             tasks.set(taskKey, task);
 
-            statisticsService.incUnassignedTasks(task.getClass().getName());
+            statisticsService.incUnassignedTasks(task.getTaskType());
         }
     }
 
