@@ -74,9 +74,7 @@ It's only natural that we can try to build a distributed task processing framewo
  - Define a **TaskCompletionHandler** on the single **Master** node to handle the result of the processed task like
  maybe for our crawler example to persist the html to a NoSQL storage, or just output to console like below.
 
- ```
-
- That is basically
+That is basically all you need to get started.
 As a sidenote with the addition of cluster nodes, a hazelcast distributed Map can also be **sharded**(split) among cluster nodes to reduce the memory consumption(making it posible to store large quantities of data, on machines that don't have a high amount of memory), and also backed up by making copies which makes the information resilient so even in case of some nodes of the cluster go down, there will be no information loss.
 
 So one might think we can build a nofuss decent task distribution framework on top of this.
@@ -91,18 +89,22 @@ The **Master** assigns the **Task**s to the active **Agents**, by an implementat
    For example if an Agent starts reporting an increasing number of failed tasks, the **Master** **can reassign the failed tasks and future tasks of that type to another** **Agent**.(Imagine the scenario where Agents perform site crawling and a particular machine/**Agent** is banned from the site - the **Master** will schedule all the failed tasks and future crawling tasks for that site on another **Agent**.  
 
    - If an **Agent** leaves the cluster, the **Master** can reassign the dead **Agent**'s tasks to other available **Agent**s. 
-   - If no active **Agent**s have registered with the **Master**, the tasks are kept with the Master until one . 
+   - If no active **Agent**s have registered with the **Master**, the tasks are kept with the Master until an agent becomes available. 
 
 ### Quick setup
 
 
 ### FAQs
- - Q: How is it different than a PubSub solution through an MQ server implementation like RabbitMQ?
-   A: 1. You don't need an external dependency, it's all java, all you need to do is import the library in your project.
-      2. Master knows where each task is executing and make better decisions on where to retry the task if certain nodes
-      begin experiencing failures for certain types of tasks or if an agent is dropped from the cluster his work
-      can be reassigned.
+ - Q: How is it different than a **PubSub** solution through an MQ server implementation like **RabbitMQ**?
+   A: 
+      1. You don't need an external dependency, it's all java, all you need to do is import the library in your project.
+      2. Master knows where each task is executing and make better decisions on where to retry the task if certain nodes begin experiencing failures for certain types of tasks or if an agent is dropped from the cluster his work can be reassigned.
+      3. Master can also make better decisions based on how "loaded" are all the agents in the cluster. It can also reassign pending tasks to a new member of the cluster.
+      
+      But for sure with some extra work you could build a similar solution on top of a MQ solution. 
 
-      But for sure with some extra work you could build
+ - Q: Does Hazelcast not have already something related to running tasks on remote nodes?
+     A: It does, you just need to look at **IExecutorService .executeOnMember** however we chose to **focus on passing the data for the computation**, **not the computation itself**, because that would limit you to what you can do - imagine passing a computation that would need an http connection to retrieve a web page-. 
+     By passing enough data for your computations on the agents you can have the libraries and frameworks of your choice on the that help solve complex scenarios.
 
- - Q: Does Hazelcast not have already ?
+ -Q: 
