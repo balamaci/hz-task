@@ -19,6 +19,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
 /**
+ * Service that performs the task execution on the agents
+ *
  * @author Serban Balamaci
  */
 public class TaskExecutionService {
@@ -27,7 +29,10 @@ public class TaskExecutionService {
 
     private EventBus eventBus;
 
-    ListeningExecutorService taskExecutorService = MoreExecutors.
+    /**
+     * Pool for executing the tasks
+     */
+    private ListeningExecutorService taskExecutorService = MoreExecutors.
             listeningDecorator(Executors.newCachedThreadPool());
 
     public TaskExecutionService(EventBus eventBus) {
@@ -46,13 +51,13 @@ public class TaskExecutionService {
         Futures.addCallback(resultFuture, new FutureCallback() {
             @Override
             public void onSuccess(Object result) {
-                log.info("Finished task {}", task);
+                log.info("SUCCESS FINISH processing for task {}", task);
                 eventBus.post(new TaskFinishedEvent(taskKey, task, (Serializable) result));
             }
 
             @Override
             public void onFailure(Throwable throwable) {
-                log.info("Received error for task {}", task.getId());
+                log.info("FAIL FINISH processing for task {}", task.getId());
                 eventBus.post(new TaskFailedEvent(taskKey, throwable));
             }
         });

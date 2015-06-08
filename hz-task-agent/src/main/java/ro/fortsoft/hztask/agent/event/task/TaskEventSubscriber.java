@@ -4,6 +4,8 @@ import com.google.common.eventbus.Subscribe;
 import ro.fortsoft.hztask.agent.ClusterAgentService;
 
 /**
+ * Subscriber that reacts to the TaskFinished and TaskFailed events
+ *
  * @author Serban Balamaci
  */
 public class TaskEventSubscriber {

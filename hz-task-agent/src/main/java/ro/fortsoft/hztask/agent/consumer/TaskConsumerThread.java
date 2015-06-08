@@ -30,7 +30,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  *
- * This is the main thread that scans for new Tasks on the queue
+ * This is the main thread that scans for new Tasks on the distribution list
  *
  * @author Serban Balamaci
  */
@@ -69,14 +69,10 @@ public class TaskConsumerThread extends Thread {
                 break;
             }
             try {
-                Predicate selectPredicate = new SqlPredicate("clusterInstanceUuid=" + localClusterId);
-
-                PagingPredicate pagingPredicate = new PagingPredicate(selectPredicate,
-                        new PriorityAndOldestTaskComparator(), clusterAgentService.getMaxRunningTasks() + 1);
-
-                Set<TaskKey> eligibleTasks = tasksMap.keySet(pagingPredicate);
 //                log.info("Returned " + eligibleTasks.size() + " remaining " + runningTasks.remainingCapacity());
                 boolean foundTask = false;
+
+                Set<TaskKey> eligibleTasks = retrieveTasksAssignedToInstanceId(localClusterId);
 
                 for (TaskKey taskKey : eligibleTasks) {
                     if (!runningTasks.contains(taskKey)) {
@@ -100,6 +96,15 @@ public class TaskConsumerThread extends Thread {
             }
         }
         log.info("TaskConsumer Thread terminated");
+    }
+
+    private Set<TaskKey> retrieveTasksAssignedToInstanceId(String localClusterId) {
+        Predicate selectPredicate = new SqlPredicate("clusterInstanceUuid=" + localClusterId);
+
+        PagingPredicate pagingPredicate = new PagingPredicate(selectPredicate,
+                new PriorityAndOldestTaskComparator(), clusterAgentService.getMaxRunningTasks() + 1);
+
+        return tasksMap.keySet(pagingPredicate);
     }
 
     private void startProcessingTask(TaskKey taskKey,Task task) throws InterruptedException {
