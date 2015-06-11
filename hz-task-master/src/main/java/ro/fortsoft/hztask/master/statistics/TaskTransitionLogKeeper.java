@@ -12,7 +12,7 @@ import static ro.fortsoft.hztask.master.statistics.TaskActivityEntry.create;
  *
  * @author Serban Balamaci
  */
-public class TaskLogKeeper {
+public class TaskTransitionLogKeeper {
 
     private Multimap<String, TaskActivityEntry> tracker = ArrayListMultimap.create();
 

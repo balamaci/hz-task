@@ -6,11 +6,14 @@ import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.Member;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.op.AbstractClusterOp;
+import ro.fortsoft.hztask.op.agent.OutputDebugStatsOp;
 import ro.fortsoft.hztask.op.agent.ShutdownAgentOp;
 
 import java.util.concurrent.Future;
 
 /**
+ * Messaging backend between the Master and Agents through which the master sends explicits messages
+ *
  * @author Serban Balamaci
  */
 public class CommunicationService {
@@ -34,6 +37,10 @@ public class CommunicationService {
 
     public Future sendShutdownMessageToMember(Member member) {
         return communicationExecutorService.submitToMember(new ShutdownAgentOp(), member);
+    }
+
+    public Future sendOutputDebugStatsToMember(Member member) {
+        return communicationExecutorService.submitToMember(new OutputDebugStatsOp(), member);
     }
 
 }

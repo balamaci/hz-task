@@ -17,7 +17,7 @@ import ro.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
 import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.scheduler.TasksDistributionThread;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
-import ro.fortsoft.hztask.master.statistics.TaskLogKeeper;
+import ro.fortsoft.hztask.master.statistics.TaskTransitionLogKeeper;
 import ro.fortsoft.hztask.master.util.NamesUtil;
 
 import java.util.Collection;
@@ -40,7 +40,8 @@ public class ClusterDistributionService {
     private IStatisticsService statisticsService;
 
     private TasksDistributionThread tasksDistributionThread;
-    private TaskLogKeeper taskLogKeeper;
+
+    private TaskTransitionLogKeeper taskTransitionLogKeeper;
 
     //
     private AtomicLong latestTaskCounter;
@@ -69,7 +70,7 @@ public class ClusterDistributionService {
         log.info("Adding task={} to Map", task);
         tasks.set(taskKey, task);
 
-        taskLogKeeper.taskReceived(taskKey.getTaskId());
+        taskTransitionLogKeeper.taskReceived(taskKey.getTaskId());
 
 //        if(statisticsService.getBacklogTaskCount(task.getTaskType()) == 0) { //why only for 0?
             startTaskDistributionThread();
@@ -91,22 +92,22 @@ public class ClusterDistributionService {
             if(oldClusterInstanceAssignedToTask.equals(LOCAL_MASTER_UUID)) {
                 log.info("Assigning task={} to run on Agent {}", task, NamesUtil.
                         toLogFormat(task.getClusterInstanceUuid()));
-                taskLogKeeper.taskAssigned(taskKey.getTaskId(), clusterInstanceId);
+                taskTransitionLogKeeper.taskAssigned(taskKey.getTaskId(), clusterInstanceId);
             } else {
                 log.info("Rescheduling task={} to run on Agent {}", task, NamesUtil.
                         toLogFormat(task.getClusterInstanceUuid()));
-                taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
+                taskTransitionLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
             }
 
             statisticsService.incSubmittedTasks(task.getTaskType(), clusterInstanceId);
             statisticsService.decUnassignedTask(task.getTaskType());
 
-            taskLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
+            taskTransitionLogKeeper.taskReassigned(taskKey.getTaskId(), clusterInstanceId);
         } else { //we're unassigning a task
             log.info("Unassigned task={}", task);
 
             statisticsService.incUnassignedTasks(task.getTaskType());
-            taskLogKeeper.taskUnassigned(taskKey.getTaskId());
+            taskTransitionLogKeeper.taskUnassigned(taskKey.getTaskId());
         }
     }
 
@@ -146,10 +147,10 @@ public class ClusterDistributionService {
         Task task = tasks.remove(taskKey);
         if (taskFailed) {
             statisticsService.incTaskFailedCounter(task.getTaskType(), agentUuid);
-            taskLogKeeper.taskFinishedFailure(taskKey.getTaskId());
+            taskTransitionLogKeeper.taskFinishedFailure(taskKey.getTaskId());
         } else {
             statisticsService.incTaskFinishedCounter(task.getTaskType(), agentUuid);
-            taskLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
+            taskTransitionLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
         }
 
         doAfterTaskFinished(agentUuid);
@@ -296,9 +297,9 @@ public class ClusterDistributionService {
     public HazelcastTopologyService getHazelcastTopologyService() {
         return hazelcastTopologyService;
     }
-
-    public void setTaskLogKeeper(TaskLogKeeper taskLogKeeper) {
-        this.taskLogKeeper = taskLogKeeper;
+    
+    public void setTaskTransitionLogKeeper(TaskTransitionLogKeeper taskTransitionLogKeeper) {
+        this.taskTransitionLogKeeper = taskTransitionLogKeeper;
     }
 
     public boolean isShuttingDown() {

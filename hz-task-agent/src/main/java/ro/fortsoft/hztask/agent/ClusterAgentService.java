@@ -88,6 +88,11 @@ public class ClusterAgentService implements IClusterAgentService {
         hzInstance.shutdown();
     }
 
+    @Override
+    public void outputDebugStatistics() {
+        taskConsumerThread.outputDebugStatistics();
+    }
+
     private void startTaskConsumer() {
         taskConsumerThread = new TaskConsumerThread(this);
 

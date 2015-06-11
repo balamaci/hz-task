@@ -163,4 +163,15 @@ public class HazelcastTopologyService {
     public HazelcastInstance getHzInstance() {
         return hzInstance;
     }
+
+    /**
+     * Trigger on the Agents the message to output debug statistics
+     */
+    public void sendOutputDebugStatsToMember() {
+        List<Member> agents = getAgentsCopy();
+        for(Member member : agents) {
+            communicationService.sendOutputDebugStatsToMember(member);
+        }
+    }
+
 }

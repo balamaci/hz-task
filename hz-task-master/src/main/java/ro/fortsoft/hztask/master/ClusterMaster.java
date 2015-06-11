@@ -25,7 +25,7 @@ import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.statistics.TaskActivityEntry;
-import ro.fortsoft.hztask.master.statistics.TaskLogKeeper;
+import ro.fortsoft.hztask.master.statistics.TaskTransitionLogKeeper;
 
 import java.util.Date;
 import java.util.Set;
@@ -43,7 +43,7 @@ public class ClusterMaster {
     private final ClusterDistributionService clusterDistributionService;
     private HazelcastTopologyService hazelcastTopologyService;
 
-    private final TaskLogKeeper taskLogKeeper = new TaskLogKeeper();
+    private final TaskTransitionLogKeeper taskTransitionLogKeeper = new TaskTransitionLogKeeper();
 
     private AsyncEventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
 
@@ -62,7 +62,7 @@ public class ClusterMaster {
 
         clusterDistributionService.setRoutingStrategy(getRoutingStrategy(masterConfig,
                 hazelcastTopologyService, clusterDistributionService.getStatisticsService()));
-        clusterDistributionService.setTaskLogKeeper(taskLogKeeper);
+        clusterDistributionService.setTaskTransitionLogKeeper(taskTransitionLogKeeper);
 
         checkNoOtherMasterClusterAmongMembers();
 
@@ -136,7 +136,7 @@ public class ClusterMaster {
 
 
     public Multimap<String, TaskActivityEntry> getUnfinishedTasksActivityLog(int startedSecsAgo) {
-        ImmutableListMultimap<String, TaskActivityEntry> logData = taskLogKeeper.getDataCopy();
+        ImmutableListMultimap<String, TaskActivityEntry> logData = taskTransitionLogKeeper.getDataCopy();
         Date now = new Date();
         long agoMillis = now.getTime() - startedSecsAgo * 1000;
 
@@ -158,4 +158,12 @@ public class ClusterMaster {
         clusterDistributionService.setLatestTaskCounter(latestTaskCounter);
         clusterDistributionService.unassignOlderTasks(latestTaskCounter);
     }
+
+    /**
+     * Method will trigger an output of debug information for Master and Agents
+     */
+    public void outputDebugStatisticsForMasterAndAgents() {
+        hazelcastTopologyService.sendOutputDebugStatsToMember();
+    }
+
 }

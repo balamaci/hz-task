@@ -38,6 +38,7 @@ public class TaskConsumerThread extends Thread {
 
 //    private Set<TaskKey> localTaskQueue;
 
+    /** BlockingQueue is Threadsafe **/
     private BlockingQueue<TaskKey> runningTasks;
 
     private ClusterAgentService clusterAgentService;
@@ -162,6 +163,9 @@ public class TaskConsumerThread extends Thread {
             log.info("Wanted to notify Master but Master left");
         }
         runningTasks.remove(taskKey);
+    }
+
+    public void outputDebugStatistics() {
     }
 
     public void setShuttingDown(boolean shuttingDown) {

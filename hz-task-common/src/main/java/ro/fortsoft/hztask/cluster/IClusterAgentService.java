@@ -17,4 +17,6 @@ public interface IClusterAgentService {
 
     public void shutdown();
 
+    public void outputDebugStatistics();
+
 }
