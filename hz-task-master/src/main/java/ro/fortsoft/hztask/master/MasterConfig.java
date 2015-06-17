@@ -1,6 +1,6 @@
 package ro.fortsoft.hztask.master;
 
-import ro.fortsoft.hztask.master.listener.TaskCompletionHandlerFactory;
+import ro.fortsoft.hztask.master.handler.TaskCompletionHandlerFactory;
 import ro.fortsoft.hztask.master.router.RoutingStrategy;
 
 import java.util.HashMap;

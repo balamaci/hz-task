@@ -1,4 +1,4 @@
-package ro.fortsoft.hztask.master.listener;
+package ro.fortsoft.hztask.master.handler;
 
 /**
  * @author Serban Balamaci

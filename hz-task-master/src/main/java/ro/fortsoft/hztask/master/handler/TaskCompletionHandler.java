@@ -1,4 +1,4 @@
-package ro.fortsoft.hztask.master.listener;
+package ro.fortsoft.hztask.master.handler;
 
 import ro.fortsoft.hztask.common.task.Task;
 
