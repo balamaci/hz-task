@@ -6,7 +6,7 @@ import com.hazelcast.core.Member;
 /**
  * @author Serban Balamaci
  */
-public class AnnounceMasterAndSignalStartWorkOp extends AbstractAgentOp {
+public class AnnounceMasterAndSignalStartWorkOp extends AbstractAgentOp<Boolean> {
 
     private String masterUuid;
 
@@ -15,17 +15,12 @@ public class AnnounceMasterAndSignalStartWorkOp extends AbstractAgentOp {
     }
 
     @Override
-    public Object call() throws Exception {
-        try {
-            boolean masterChanged = getClusterAgentService().setMaster(masterUuid);
-            if(masterChanged) {
-                getClusterAgentService().startWork();
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
-        } catch (Exception e) {
-            e.printStackTrace();
+    public Boolean call() throws Exception {
+        boolean masterChanged = getClusterAgentService().setMaster(masterUuid);
+        if(masterChanged) {
+            getClusterAgentService().startWork();
+            return Boolean.TRUE;
         }
-        return null;
+        return Boolean.FALSE;
     }
 }

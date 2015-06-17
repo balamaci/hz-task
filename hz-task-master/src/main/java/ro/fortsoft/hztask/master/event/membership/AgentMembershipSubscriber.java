@@ -2,7 +2,7 @@ package ro.fortsoft.hztask.master.event.membership;
 
 import com.google.common.eventbus.Subscribe;
 import com.hazelcast.core.Member;
-import ro.fortsoft.hztask.master.HazelcastTopologyService;
+import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.scheduler.AgentLeftTaskRescheduler;
 
@@ -23,7 +23,7 @@ public class AgentMembershipSubscriber {
 
     @Subscribe
     public void memberJoined(MemberJoinedEvent event) {
-        hazelcastTopologyService.callbackWhenAgentReady(event.getMember(), 0);
+        hazelcastTopologyService.startJoinProtocolFor(event.getMember());
     }
 
     @Subscribe

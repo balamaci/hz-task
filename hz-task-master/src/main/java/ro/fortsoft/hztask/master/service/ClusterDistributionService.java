@@ -12,7 +12,7 @@ import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.comparator.PriorityAndOldestTaskComparator;
-import ro.fortsoft.hztask.master.HazelcastTopologyService;
+import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
 import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.scheduler.TasksDistributionThread;

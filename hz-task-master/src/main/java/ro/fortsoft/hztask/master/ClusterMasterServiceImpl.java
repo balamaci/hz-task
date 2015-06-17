@@ -9,6 +9,7 @@ import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
+import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.util.NamesUtil;
 
 import java.io.Serializable;

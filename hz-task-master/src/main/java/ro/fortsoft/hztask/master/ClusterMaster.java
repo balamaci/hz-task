@@ -26,6 +26,7 @@ import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.statistics.TaskActivityEntry;
 import ro.fortsoft.hztask.master.statistics.TaskTransitionLogKeeper;
+import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 
 import java.util.Date;
 import java.util.Set;
@@ -133,12 +134,18 @@ public class ClusterMaster {
         Set<Member> memberSet = hzInstance.getCluster().getMembers();
         for(Member member : memberSet) {
             if(! member.localMember()) {
-                hazelcastTopologyService.callbackWhenAgentReady(member, 0);
+                hazelcastTopologyService.startJoinProtocolFor(member);
             }
         }
     }
 
-
+    /**
+     * Get Map of tasks uids and their list of transitions for Tasks that have started
+     * and are still not finished . Ideal for investigating long running tasks
+     *
+     * @param startedSecsAgo how many seconds ago the running tasks have started
+     * @return Map of tasks uids and their list of transitions for Tasks that have
+     */
     public Multimap<String, TaskActivityEntry> getUnfinishedTasksActivityLog(int startedSecsAgo) {
         ImmutableListMultimap<String, TaskActivityEntry> logData = taskTransitionLogKeeper.getDataCopy();
         Date now = new Date();

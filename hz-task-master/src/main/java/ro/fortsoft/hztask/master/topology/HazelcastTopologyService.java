@@ -1,4 +1,4 @@
-package ro.fortsoft.hztask.master;
+package ro.fortsoft.hztask.master.topology;
 
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.AsyncEventBus;
@@ -37,7 +37,7 @@ public class HazelcastTopologyService {
 
     private final HazelcastInstance hzInstance;
 
-    private static final int MAX_ASK_READY_ATTEMPTS = 5;
+    private static final int MAX_ASK_ATTEMPTS = 5;
 
     private final AsyncEventBus eventBus;
 
@@ -78,8 +78,17 @@ public class HazelcastTopologyService {
         return false;
     }
 
-    public void callbackWhenAgentReady(Member member, int attempt) {
-        if(attempt > MAX_ASK_READY_ATTEMPTS) {
+    /**
+     * Start the procedure to prepare a new member of the cluster to become an Agent of the
+     * current Master
+     * @param member new member
+     */
+    public void startJoinProtocolFor(Member member) {
+        askMemberIsReadyToJoin(member, 0);
+    }
+
+    private void askMemberIsReadyToJoin(Member member, int attempt) {
+        if(attempt > MAX_ASK_ATTEMPTS) {
             log.error("NON_JOIN_READY_AFTER_MANY_ATTEMPTS: After {} attempts the member {} " +
                     "did not respond affirmatively", attempt);
             return;
@@ -91,6 +100,22 @@ public class HazelcastTopologyService {
                      new MemberReadyCallback(member, attempt));
         } catch (Exception e) {
             log.error("Error sending AskAgentReadyOp", e);
+        }
+    }
+
+    private void askAgentToAcceptMaster(Member member, int attempt) {
+        if(attempt > MAX_ASK_ATTEMPTS) {
+            log.error("NOT_ACCEPT_MASTER_AFTER_MANY_ATTEMPTS: After {} attempts the member {} " +
+                    "did not respond affirmatively", attempt);
+            return;
+        }
+
+        try {
+            log.info("Asking {} if ACCEPT MASTER attempt {}", member, attempt);
+            communicationService.submitToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()),
+                     new AnnounceMasterCallback(member, attempt));
+        } catch (Exception e) {
+            log.error("Error sending AnnounceMasterAndSignalStartWorkOp", e);
         }
     }
 
@@ -122,40 +147,6 @@ public class HazelcastTopologyService {
     }
 
 
-    private class MemberReadyCallback implements ExecutionCallback<Boolean> {
-
-        private Member member;
-        private int attempt;
-
-        private MemberReadyCallback(Member member, int attempt) {
-            this.member = member;
-            this.attempt = attempt;
-        }
-
-        @Override
-        public void onResponse(Boolean response) {
-            if(response) {
-                log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
-                communicationService.sendMessageToMember(member, new AnnounceMasterAndSignalStartWorkOp(getMaster()));
-
-                eventBus.post(new AgentJoinedEvent(member));
-            } else {
-                TimerTask timerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        callbackWhenAgentReady(member, ++ attempt);
-                    }
-                };
-                new Timer().schedule(timerTask, 5000);
-            }
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-            log.error("EXCEPTION_ON_JOIN Agent responded with failure", t);
-        }
-    }
-
     public Member getLocalMember() {
         return hzInstance.getCluster().getLocalMember();
     }
@@ -170,8 +161,73 @@ public class HazelcastTopologyService {
     public void sendOutputDebugStatsToMember() {
         List<Member> agents = getAgentsCopy();
         for(Member member : agents) {
-            communicationService.sendOutputDebugStatsToMember(member);
+            communicationService.sendOutputDebugStatsMessageToMember(member);
         }
     }
 
+
+    private class MemberReadyCallback implements ExecutionCallback<Boolean> {
+
+        private Member member;
+        private int attempt;
+
+        private MemberReadyCallback(Member member, int attempt) {
+            this.member = member;
+            this.attempt = attempt;
+        }
+
+        @Override
+        public void onResponse(Boolean response) {
+            if(response) {
+                log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
+                askAgentToAcceptMaster(member, 0);
+            } else {
+                TimerTask timerTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        askMemberIsReadyToJoin(member, ++ attempt);
+                    }
+                };
+                new Timer().schedule(timerTask, 5000);
+            }
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            log.error("EXCEPTION_ON_JOIN Agent responded with failure", t);
+        }
+    }
+
+
+    private class AnnounceMasterCallback implements ExecutionCallback<Boolean> {
+
+        private Member member;
+        private int attempt;
+
+        private AnnounceMasterCallback(Member member, int attempt) {
+            this.member = member;
+            this.attempt = attempt;
+        }
+
+        @Override
+        public void onResponse(Boolean response) {
+            if(response) {
+                log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
+                eventBus.post(new AgentJoinedEvent(member));
+            } else {
+                TimerTask timerTask = new TimerTask() {
+                    @Override
+                    public void run() {
+                        askAgentToAcceptMaster(member, ++ attempt);
+                    }
+                };
+                new Timer().schedule(timerTask, 5000);
+            }
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            log.error("EXCEPTION_ON_MASTER_ANNOUNCE - Agent responded with failure", t);
+        }
+    }
 }

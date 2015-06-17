@@ -39,7 +39,7 @@ public class CommunicationService {
         return communicationExecutorService.submitToMember(new ShutdownAgentOp(), member);
     }
 
-    public Future sendOutputDebugStatsToMember(Member member) {
+    public Future sendOutputDebugStatsMessageToMember(Member member) {
         return communicationExecutorService.submitToMember(new OutputDebugStatsOp(), member);
     }
 

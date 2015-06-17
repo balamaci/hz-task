@@ -5,7 +5,7 @@ import com.hazelcast.core.Member;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.task.Task;
-import ro.fortsoft.hztask.master.HazelcastTopologyService;
+import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.util.NamesUtil;
 

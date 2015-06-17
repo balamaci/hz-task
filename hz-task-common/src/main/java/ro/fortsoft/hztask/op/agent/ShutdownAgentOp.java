@@ -5,10 +5,10 @@ package ro.fortsoft.hztask.op.agent;
  *
  * @author Serban Balamaci
  */
-public class ShutdownAgentOp extends AbstractAgentOp {
+public class ShutdownAgentOp extends AbstractAgentOp<Void> {
 
     @Override
-    public Object call() throws Exception {
+    public Void call() throws Exception {
         getClusterAgentService().shutdown();
         return null;
     }

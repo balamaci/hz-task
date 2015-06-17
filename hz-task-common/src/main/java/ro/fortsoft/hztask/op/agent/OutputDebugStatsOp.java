@@ -5,10 +5,10 @@ package ro.fortsoft.hztask.op.agent;
  *
  * @author Serban Balamaci
  */
-public class OutputDebugStatsOp extends AbstractAgentOp {
+public class OutputDebugStatsOp extends AbstractAgentOp<Void> {
 
     @Override
-    public Object call() throws Exception {
+    public Void call() throws Exception {
         getClusterAgentService().outputDebugStatistics();
         return null;
     }

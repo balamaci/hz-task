@@ -3,7 +3,7 @@ package ro.fortsoft.hztask.master.router;
 import com.google.common.base.Optional;
 import com.hazelcast.core.Member;
 import ro.fortsoft.hztask.common.task.Task;
-import ro.fortsoft.hztask.master.HazelcastTopologyService;
+import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 
 /**
  * @author Serban Balamaci
