@@ -17,8 +17,12 @@ public class AnnounceMasterAndSignalStartWorkOp extends AbstractAgentOp {
     @Override
     public Object call() throws Exception {
         try {
-            getClusterAgentService().setMaster(masterUuid);
-            getClusterAgentService().startWork();
+            boolean masterChanged = getClusterAgentService().setMaster(masterUuid);
+            if(masterChanged) {
+                getClusterAgentService().startWork();
+                return Boolean.TRUE;
+            }
+            return Boolean.FALSE;
         } catch (Exception e) {
             e.printStackTrace();
         }

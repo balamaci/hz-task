@@ -1,5 +1,6 @@
 package ro.fortsoft.hztask.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
@@ -48,11 +49,22 @@ public class ClusterAgentService implements IClusterAgentService {
 
         try {
             if(master != null) {
+                log.info("There is already a registered master, we cannot accept new master uid={}", masterUuid);
                 return false;
             }
-            master = ClusterUtil.findMemberWithUuid(hzInstance, masterUuid).get();
+            try {
+                Optional<Member> masterOpt = ClusterUtil.findMemberWithUuid(hzInstance, masterUuid);
+                if (masterOpt.isPresent()) {
+                    master = masterOpt.get();
+                    return true;
+                } else {
+                    log.error("Announced master is not among cluster members uid={}", masterUuid);
+                }
+            } catch (Exception e) {
+                log.error("Exception on setting the Master uid={}", e);
+            }
 
-            return true;
+            return false;
         } finally {
             lockMaster.writeLock().unlock();
         }

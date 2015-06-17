@@ -83,6 +83,14 @@ public class ClusterMaster {
     }
 
     /**
+     * Offer a task for distribution to Agents
+     * @param task task
+     */
+    public void submitTask(Task task) {
+        clusterDistributionService.enqueueTask(task);
+    }
+
+    /**
      * Gets the routing strategy RoundRobin, Balanced, based on the config from MasterConfig
      *
      * @param hzTopologyService hzTopologyService
@@ -105,10 +113,6 @@ public class ClusterMaster {
     }
 
 
-    public void submitTask(Task task) {
-        clusterDistributionService.enqueueTask(task);
-    }
-
     private void checkNoOtherMasterClusterAmongMembers() {
         if(hazelcastTopologyService.isMasterAmongClusterMembers()) {
             hzInstance.shutdown();
@@ -124,7 +128,7 @@ public class ClusterMaster {
         return hazelcastTopologyService.getAgentsCount();
     }
 
-    //Master might be started after some Agent
+    //Master might be started after some Agents are already running
     private void registerAlreadyPresentAgents() {
         Set<Member> memberSet = hzInstance.getCluster().getMembers();
         for(Member member : memberSet) {
