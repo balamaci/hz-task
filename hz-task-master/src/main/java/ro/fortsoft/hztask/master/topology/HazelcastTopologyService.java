@@ -166,6 +166,10 @@ public class HazelcastTopologyService {
     }
 
 
+    private void rescheduleOp(TimerTask timerTask) {
+        new Timer().schedule(timerTask, 5000);
+    }
+
     private class MemberReadyCallback implements ExecutionCallback<Boolean> {
 
         private Member member;
@@ -182,19 +186,24 @@ public class HazelcastTopologyService {
                 log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
                 askAgentToAcceptMaster(member, 0);
             } else {
-                TimerTask timerTask = new TimerTask() {
+                rescheduleOp(new TimerTask() {
                     @Override
                     public void run() {
                         askMemberIsReadyToJoin(member, ++ attempt);
                     }
-                };
-                new Timer().schedule(timerTask, 5000);
+                });
             }
         }
 
         @Override
         public void onFailure(Throwable t) {
             log.error("EXCEPTION_ON_JOIN Agent responded with failure", t);
+            rescheduleOp(new TimerTask() {
+                @Override
+                public void run() {
+                    askMemberIsReadyToJoin(member, ++ attempt);
+                }
+            });
         }
     }
 
@@ -215,19 +224,24 @@ public class HazelcastTopologyService {
                 log.info("NEW_JOIN New cluster agent {} ID={} is active", member, member.getUuid());
                 eventBus.post(new AgentJoinedEvent(member));
             } else {
-                TimerTask timerTask = new TimerTask() {
+                rescheduleOp(new TimerTask() {
                     @Override
                     public void run() {
-                        askAgentToAcceptMaster(member, ++ attempt);
+                        askAgentToAcceptMaster(member, ++attempt);
                     }
-                };
-                new Timer().schedule(timerTask, 5000);
+                });
             }
         }
 
         @Override
         public void onFailure(Throwable t) {
             log.error("EXCEPTION_ON_MASTER_ANNOUNCE - Agent responded with failure", t);
+            rescheduleOp(new TimerTask() {
+                @Override
+                public void run() {
+                    askAgentToAcceptMaster(member, ++ attempt);
+                }
+            });
         }
     }
 }
