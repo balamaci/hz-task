@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import ro.fortsoft.hztask.agent.ClusterAgentService;
 
 /**
- * Subscriber that reacts to the TaskFinished and TaskFailed events
+ * Subscriber that reacts to the {@link TaskFinishedEvent} and {@link TaskFailedEvent} events
  *
  * @author Serban Balamaci
  */

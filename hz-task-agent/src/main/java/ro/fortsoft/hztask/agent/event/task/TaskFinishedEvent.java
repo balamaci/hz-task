@@ -8,14 +8,20 @@ import java.io.Serializable;
 /**
  * @author Serban Balamaci
  */
-public class TaskFinishedEvent {
+public class TaskFinishedEvent<T extends Serializable> {
 
     private final TaskKey taskKey;
     private final Task task;
 
-    private final Serializable result;
+    private final T result;
 
-    public TaskFinishedEvent(TaskKey taskKey, Task task, Serializable result) {
+    /**
+     * Constr.
+     * @param taskKey taskKey
+     * @param task Task
+     * @param result after the task was processed
+     */
+    public TaskFinishedEvent(TaskKey taskKey, Task task, T result) {
         this.taskKey = taskKey;
         this.task = task;
         this.result = result;
@@ -29,7 +35,7 @@ public class TaskFinishedEvent {
         return task;
     }
 
-    public Serializable getResult() {
+    public T getResult() {
         return result;
     }
 }

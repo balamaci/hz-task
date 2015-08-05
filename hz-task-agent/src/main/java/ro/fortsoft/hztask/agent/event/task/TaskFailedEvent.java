@@ -11,6 +11,11 @@ public class TaskFailedEvent {
 
     private final Throwable exception;
 
+    /**
+     * Constr.
+     * @param taskKey taskKey
+     * @param exception exception that was encountered when processing the task
+     */
     public TaskFailedEvent(TaskKey taskKey, Throwable exception) {
         this.taskKey = taskKey;
         this.exception = exception;

@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * TaskCompletionHandlerService that retrieves the @link ro.fortsoft.hztask.master.handler.TaskCompletionHandler
+ * TaskCompletionHandlerService that retrieves the {@link TaskCompletionHandler}
  *
  * @author Serban Balamaci
  */

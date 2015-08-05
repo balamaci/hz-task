@@ -42,7 +42,7 @@ public class ClusterAgent  {
     private ClusterAgentService clusterAgentService;
 
     public ClusterAgent(AgentConfig config, Config hzConfig) {
-        log.info("Starting agent ...");
+        log.info("Starting agent {}", config.getName());
 
         String name = config.getName();
         if(name != null) {

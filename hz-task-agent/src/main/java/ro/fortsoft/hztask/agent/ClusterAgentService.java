@@ -81,9 +81,8 @@ public class ClusterAgentService implements IClusterAgentService {
         }
     }
 
-    public void stopWork() {
-        taskConsumerThread.setShuttingDown(true);
-        taskConsumerThread.interrupt();
+    private void stopWork() {
+        taskConsumerThread.shutDown();
     }
 
     @Override

@@ -1,5 +1,6 @@
 package ro.fortsoft.hztask.agent.consumer;
 
+import com.google.common.collect.Lists;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.IMap;
@@ -13,15 +14,16 @@ import ro.fortsoft.hztask.agent.ClusterAgentService;
 import ro.fortsoft.hztask.agent.processor.TaskProcessor;
 import ro.fortsoft.hztask.agent.processor.TaskProcessorFactory;
 import ro.fortsoft.hztask.agent.service.TaskExecutionService;
-import ro.fortsoft.hztask.op.NotifyMasterTaskFailedOp;
-import ro.fortsoft.hztask.op.NotifyMasterTaskFinishedOp;
 import ro.fortsoft.hztask.common.HzKeysConstants;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.comparator.PriorityAndOldestTaskComparator;
+import ro.fortsoft.hztask.op.NotifyMasterTaskFailedOp;
+import ro.fortsoft.hztask.op.NotifyMasterTaskFinishedOp;
 import ro.fortsoft.hztask.util.ClusterUtil;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
@@ -36,14 +38,10 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class TaskConsumerThread extends Thread {
 
-//    private Set<TaskKey> localTaskQueue;
-
     /** BlockingQueue is Threadsafe **/
     private BlockingQueue<TaskKey> runningTasks;
 
     private ClusterAgentService clusterAgentService;
-
-    private static final Logger log = LoggerFactory.getLogger(TaskConsumerThread.class);
 
     private volatile boolean shuttingDown = false;
 
@@ -51,6 +49,10 @@ public class TaskConsumerThread extends Thread {
 
     private TaskExecutionService taskExecutionService;
 
+    /** List of callbacks waiting for Master acknowledgement of receival of task results **/
+    private List<Future> waitingForMasterCallbacks = Lists.newArrayList();
+
+    private static final Logger log = LoggerFactory.getLogger(TaskConsumerThread.class);
 
     public TaskConsumerThread(ClusterAgentService clusterAgentService) {
         this.clusterAgentService = clusterAgentService;
@@ -131,7 +133,7 @@ public class TaskConsumerThread extends Thread {
             try {
                 masterNotified.get();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.info("Callback for Master notification received an interrupt signal, stopping");
             } catch (ExecutionException e) {
                 log.error("Task {}, failed to notify Master of it's status", e);
             }
@@ -155,7 +157,7 @@ public class TaskConsumerThread extends Thread {
             try {
                 masterNotified.get();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                log.info("Callback for Master notification received an interrupt signal, stopping");
             } catch (ExecutionException e) {
                 log.error("Task {}, failed to notify Master of it's status", e);
             }
@@ -168,7 +170,8 @@ public class TaskConsumerThread extends Thread {
     public void outputDebugStatistics() {
     }
 
-    public void setShuttingDown(boolean shuttingDown) {
-        this.shuttingDown = shuttingDown;
+    public void shutDown() {
+        shuttingDown = true;
+        interrupt();
     }
 }

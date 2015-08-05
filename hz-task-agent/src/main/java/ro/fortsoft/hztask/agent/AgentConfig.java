@@ -16,6 +16,7 @@ public class AgentConfig {
 
     private String name;
 
+    /** maximum simultaneous running tasks on Agent **/
     private int maxRunningTasks = 5;
 
     public void registerTaskProcessorFactory(Class taskClass, TaskProcessorFactory taskProcessorFactory) {
@@ -28,6 +29,10 @@ public class AgentConfig {
 
     public int getMaxRunningTasks() {
         return maxRunningTasks;
+    }
+
+    public void setMaxRunningTasks(int maxRunningTasks) {
+        this.maxRunningTasks = maxRunningTasks;
     }
 
     public String getName() {

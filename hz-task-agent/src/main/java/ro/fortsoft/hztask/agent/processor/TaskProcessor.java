@@ -5,7 +5,7 @@ import ro.fortsoft.hztask.common.task.Task;
 import java.io.Serializable;
 
 /**
- * Base class for processors of task to implement
+ * Base interface for processors of task to implement
  *
  * Override this class and inject from the Factory the dependencies
  *

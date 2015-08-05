@@ -5,6 +5,8 @@ import com.google.common.base.Objects;
 import java.io.Serializable;
 
 /**
+ * Key that references Task in the distributed Hazelcast Map of {@link Task}
+ *
  * @author Serban Balamaci
  */
 public class TaskKey implements Serializable {
