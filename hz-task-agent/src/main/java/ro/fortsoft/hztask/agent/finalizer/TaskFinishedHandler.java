@@ -34,13 +34,11 @@ public class TaskFinishedHandler {
     }
 
     public void failure(TaskKey taskKey, Throwable exception) {
-        log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
-
         HazelcastInstance hzInstance = clusterAgentService.getHzInstance();
 
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFailedOp(taskKey, exception,
                 ClusterUtil.getLocalMemberUuid(hzInstance)));
-        waitForFutureToComplete(masterNotified);
+        waitForConfirmationFromMaster(masterNotified);
 
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
@@ -48,15 +46,14 @@ public class TaskFinishedHandler {
     public void success(TaskKey taskKey, Serializable result) {
         HazelcastInstance hzInstance = clusterAgentService.getHzInstance();
 
-        log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFinishedOp(taskKey, result,
                 ClusterUtil.getLocalMemberUuid(hzInstance)));
-        waitForFutureToComplete(masterNotified);
+        waitForConfirmationFromMaster(masterNotified);
 
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
 
-    private void waitForFutureToComplete(Optional<Future> futureOptional) {
+    private void waitForConfirmationFromMaster(Optional<Future> futureOptional) {
         if(futureOptional.isPresent()) {
             try {
                 futureOptional.get().get();
