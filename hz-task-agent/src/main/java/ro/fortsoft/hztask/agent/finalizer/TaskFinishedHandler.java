@@ -23,17 +23,19 @@ import java.util.concurrent.Future;
  *
  * @author sbalamaci
  */
-public class TaskFinalizer {
+public class TaskFinishedHandler {
 
     private ClusterAgentService clusterAgentService;
 
-    private static final Logger log = LoggerFactory.getLogger(TaskFinalizer.class);
+    private static final Logger log = LoggerFactory.getLogger(TaskFinishedHandler.class);
 
-    public TaskFinalizer(ClusterAgentService clusterAgentService) {
+    public TaskFinishedHandler(ClusterAgentService clusterAgentService) {
         this.clusterAgentService = clusterAgentService;
     }
 
-    public void notifyTaskFailed(TaskKey taskKey, Throwable exception) {
+    public void failure(TaskKey taskKey, Throwable exception) {
+        log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());
+
         HazelcastInstance hzInstance = clusterAgentService.getHzInstance();
 
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFailedOp(taskKey, exception,
@@ -43,7 +45,7 @@ public class TaskFinalizer {
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
 
-    public void notifyTaskFinished(TaskKey taskKey, Serializable result) {
+    public void success(TaskKey taskKey, Serializable result) {
         HazelcastInstance hzInstance = clusterAgentService.getHzInstance();
 
         log.info("Notifying Master of task {} finished successfully", taskKey.getTaskId());

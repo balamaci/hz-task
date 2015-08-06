@@ -2,7 +2,7 @@ package ro.fortsoft.hztask.agent.event.task;
 
 import com.google.common.eventbus.Subscribe;
 import ro.fortsoft.hztask.agent.ClusterAgentService;
-import ro.fortsoft.hztask.agent.finalizer.TaskFinalizer;
+import ro.fortsoft.hztask.agent.finalizer.TaskFinishedHandler;
 
 /**
  * Subscriber that reacts to the {@link TaskFinishedEvent} and {@link TaskFailedEvent} events
@@ -11,22 +11,20 @@ import ro.fortsoft.hztask.agent.finalizer.TaskFinalizer;
  */
 public class TaskEventSubscriber {
 
-    private ClusterAgentService clusterAgentService;
+    private TaskFinishedHandler taskFinishedHandler;
 
     public TaskEventSubscriber(ClusterAgentService clusterAgentService) {
-        this.clusterAgentService = clusterAgentService;
+        this.taskFinishedHandler = new TaskFinishedHandler(clusterAgentService);
     }
 
     @Subscribe
     public void onTaskFinishedEvent(TaskFinishedEvent ev) {
-        new TaskFinalizer(clusterAgentService).notifyTaskFinished(ev.getTaskKey(),
-                ev.getResult());
+        taskFinishedHandler.success(ev.getTaskKey(), ev.getResult());
     }
 
     @Subscribe
     public void onTaskFailedEvent(TaskFailedEvent ev) {
-        new TaskFinalizer(clusterAgentService).notifyTaskFailed(ev.getTaskKey(),
-                ev.getException());
+        taskFinishedHandler.failure(ev.getTaskKey(), ev.getException());
     }
 
 }
