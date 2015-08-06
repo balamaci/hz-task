@@ -9,6 +9,4 @@ public enum TaskActivity {
     ASSIGNED,
     UNASSIGNED,
     REASSIGNED,
-    FINISHED
-
 }

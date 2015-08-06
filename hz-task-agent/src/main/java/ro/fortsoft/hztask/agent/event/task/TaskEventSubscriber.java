@@ -2,6 +2,7 @@ package ro.fortsoft.hztask.agent.event.task;
 
 import com.google.common.eventbus.Subscribe;
 import ro.fortsoft.hztask.agent.ClusterAgentService;
+import ro.fortsoft.hztask.agent.finalizer.TaskFinalizer;
 
 /**
  * Subscriber that reacts to the {@link TaskFinishedEvent} and {@link TaskFailedEvent} events
@@ -18,13 +19,13 @@ public class TaskEventSubscriber {
 
     @Subscribe
     public void onTaskFinishedEvent(TaskFinishedEvent ev) {
-        clusterAgentService.getTaskConsumerThread().notifyTaskFinished(ev.getTaskKey(),
+        new TaskFinalizer(clusterAgentService).notifyTaskFinished(ev.getTaskKey(),
                 ev.getResult());
     }
 
     @Subscribe
     public void onTaskFailedEvent(TaskFailedEvent ev) {
-        clusterAgentService.getTaskConsumerThread().notifyTaskFailed(ev.getTaskKey(),
+        new TaskFinalizer(clusterAgentService).notifyTaskFailed(ev.getTaskKey(),
                 ev.getException());
     }
 

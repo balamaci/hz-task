@@ -1,4 +1,4 @@
-package ro.fortsoft.hztask.agent.service;
+package ro.fortsoft.hztask.agent.executor;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.FutureCallback;

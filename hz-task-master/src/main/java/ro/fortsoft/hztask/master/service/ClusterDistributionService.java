@@ -48,9 +48,9 @@ public class ClusterDistributionService {
 
     private static final String LOCAL_MASTER_UUID = "-1";
 
-    private static final Logger log = LoggerFactory.getLogger(ClusterDistributionService.class);
-
     private volatile boolean shuttingDown = false;
+
+    private static final Logger log = LoggerFactory.getLogger(ClusterDistributionService.class);
 
     public ClusterDistributionService(HazelcastTopologyService hazelcastTopologyService,
                                       IStatisticsService statisticsService) {
@@ -153,21 +153,21 @@ public class ClusterDistributionService {
             taskTransitionLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
         }
 
-        doAfterTaskFinished(agentUuid);
+        if(shouldReStartTaskDistributionThread(agentUuid)) {
+            startTaskDistributionThread();
+        }
         return task;
     }
 
-    private void doAfterTaskFinished(String agentUuid) {
+    private boolean shouldReStartTaskDistributionThread(String agentUuid) {
         long totalSubmitted = statisticsService.getSubmittedTasks(agentUuid);
         long totalProcessed = statisticsService.getFinishedTasks(agentUuid)
                 + statisticsService.getFailedTasks(agentUuid);
 
         long remaining = totalSubmitted - totalProcessed;
-        log.info("Found {} remaining tasks for {}", remaining, NamesUtil.toLogFormat(agentUuid));
+        log.info("{} Remaining tasks for {}", remaining, NamesUtil.toLogFormat(agentUuid));
 
-        if (remaining < 10) {
-            startTaskDistributionThread();
-        }
+        return remaining < 10;
     }
 
     public synchronized void startTaskDistributionThread() {
@@ -179,12 +179,12 @@ public class ClusterDistributionService {
             log.info("Starting up TaskDistributionThread");
             TasksDistributionThread newTaskDistributionThread = new TasksDistributionThread(this);
             newTaskDistributionThread.setLastThroughput(tasksDistributionThread.getLastThroughput());
-            newTaskDistributionThread.setWindowSize(tasksDistributionThread.getWindowSize());
+            newTaskDistributionThread.setBatchSize(tasksDistributionThread.getBatchSize());
 
             tasksDistributionThread = newTaskDistributionThread;
             tasksDistributionThread.start();
         } else {
-            log.info("TaskDistributionThread is already running...");
+            log.info("TaskDistributionThread is still running...");
         }
     }
 

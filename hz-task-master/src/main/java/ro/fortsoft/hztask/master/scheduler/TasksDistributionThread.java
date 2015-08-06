@@ -21,16 +21,17 @@ public class TasksDistributionThread extends Thread {
 
     private double lastThroughput = -1;
 
-    private static final int INIT_WINDOW_SIZE = 10;
-    private static final int MAX_WINDOW_SIZE = 100;
-
-    private int windowSize = INIT_WINDOW_SIZE;
+    private static final int INIT_BATCH_SIZE = 10;
+    private static final int MAX_BATCH_SIZE = 100;
+    private int batchSize = INIT_BATCH_SIZE;
 
     private IStatisticsService statisticsService;
 
     private static final Logger log = LoggerFactory.getLogger(TasksDistributionThread.class);
 
     public TasksDistributionThread(ClusterDistributionService clusterDistributionService) {
+        setName("Task distribution");
+
         this.clusterDistributionService = clusterDistributionService;
         statisticsService = clusterDistributionService.getStatisticsService();
     }
@@ -62,8 +63,8 @@ public class TasksDistributionThread extends Thread {
             }
 
             if(shouldRun) {
-                if(windowSize > 0) {
-                    clusterDistributionService.rescheduleUnassignedTasks(windowSize);
+                if(batchSize > 0) {
+                    clusterDistributionService.rescheduleUnassignedTasks(batchSize);
                 }
             }
         } catch (Exception e) {
@@ -82,13 +83,13 @@ public class TasksDistributionThread extends Thread {
     }
 
     private void recomputeWindowSize(double throughput) {
-        int oldWindowSize = windowSize;
+        int oldWindowSize = batchSize;
         if(lastThroughput > throughput) {
             decWindowSize();
         } else {
             incWindowSize();
         }
-        log.info("NEW WindowSize={} ---- Previous WindowSize={}", windowSize, oldWindowSize);
+        log.info("NEW WindowSize={} ---- Previous WindowSize={}", batchSize, oldWindowSize);
     }
 
     private long getTotalSubmittedTasks(Collection<Member> members) {
@@ -108,17 +109,17 @@ public class TasksDistributionThread extends Thread {
     }
 
     private void incWindowSize() {
-        if(windowSize == 0) {
-            windowSize = INIT_WINDOW_SIZE;
+        if(batchSize == 0) {
+            batchSize = INIT_BATCH_SIZE;
         }
 
-        if(windowSize < MAX_WINDOW_SIZE) {
-            windowSize = (int) (windowSize * 1.2);
+        if(batchSize < MAX_BATCH_SIZE) {
+            batchSize = (int) (batchSize * 1.2);
         }
     }
 
     private void decWindowSize() {
-        windowSize =  (int) (windowSize * 0.8);
+        batchSize =  (int) (batchSize * 0.8);
     }
 
     public double getLastThroughput() {
@@ -129,11 +130,11 @@ public class TasksDistributionThread extends Thread {
         this.lastThroughput = lastThroughput;
     }
 
-    public int getWindowSize() {
-        return windowSize;
+    public int getBatchSize() {
+        return batchSize;
     }
 
-    public void setWindowSize(int windowSize) {
-        this.windowSize = windowSize;
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
 }

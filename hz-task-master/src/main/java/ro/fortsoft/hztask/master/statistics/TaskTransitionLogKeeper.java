@@ -4,6 +4,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimap;
 
+import static ro.fortsoft.hztask.master.statistics.TaskActivity.*;
 import static ro.fortsoft.hztask.master.statistics.TaskActivityEntry.create;
 
 /**
@@ -17,27 +18,19 @@ public class TaskTransitionLogKeeper {
     private Multimap<String, TaskActivityEntry> tracker = ArrayListMultimap.create();
 
     public void taskReceived(String id) {
-        TaskActivityEntry entry = create(TaskActivity.CREATED);
-
-        logTaskActivity(id, entry);
+        logTaskActivity(id, CREATED);
     }
 
     public void taskAssigned(String id, String memberId) {
-        TaskActivityEntry entry = create(TaskActivity.ASSIGNED, memberId);
-
-        logTaskActivity(id, entry);
+        logTaskActivity(id, ASSIGNED, memberId);
     }
 
     public void taskUnassigned(String id) {
-        TaskActivityEntry entry = create(TaskActivity.UNASSIGNED);
-
-        logTaskActivity(id, entry);
+        logTaskActivity(id, UNASSIGNED);
     }
 
     public void taskReassigned(String id, String memberId) {
-        TaskActivityEntry entry = create(TaskActivity.REASSIGNED, memberId);
-
-        logTaskActivity(id, entry);
+        logTaskActivity(id, TaskActivity.REASSIGNED, memberId);
     }
 
     public synchronized void taskFinishedSuccess(String id) {
@@ -48,8 +41,18 @@ public class TaskTransitionLogKeeper {
         tracker.removeAll(id);
     }
 
-    private synchronized void logTaskActivity(String id, TaskActivityEntry entry) {
+    private synchronized void addActivity(String id, TaskActivityEntry entry) {
         tracker.put(id, entry);
+    }
+
+    private void logTaskActivity(String id, TaskActivity taskActivity) {
+        TaskActivityEntry entry = create(taskActivity);
+        addActivity(id, entry);
+    }
+
+    private void logTaskActivity(String id, TaskActivity taskActivity, String memberId) {
+        TaskActivityEntry entry = create(taskActivity, memberId);
+        addActivity(id, entry);
     }
 
     public synchronized ImmutableListMultimap<String, TaskActivityEntry> getDataCopy() {
