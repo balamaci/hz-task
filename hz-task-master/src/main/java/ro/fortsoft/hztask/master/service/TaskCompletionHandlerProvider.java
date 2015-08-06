@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
  *
  * @author Serban Balamaci
  */
-public class TaskCompletionHandlerService {
+public class TaskCompletionHandlerProvider {
 
     private MasterConfig masterConfig;
 
@@ -26,7 +26,7 @@ public class TaskCompletionHandlerService {
     private ExecutorService taskExecutorService = Executors.newCachedThreadPool();
 
 
-    public TaskCompletionHandlerService(MasterConfig masterConfig) {
+    public TaskCompletionHandlerProvider(MasterConfig masterConfig) {
         this.masterConfig = masterConfig;
     }
 
@@ -38,12 +38,12 @@ public class TaskCompletionHandlerService {
     public void onSuccess(final Task task, final Object taskResult) {
         final String agentName = NamesUtil.toLogFormat(task.getClusterInstanceUuid());
 
-        final Optional<TaskCompletionHandler> finishedTaskProcessor = getCompletionHandlerForTask(task);
-        if (finishedTaskProcessor.isPresent()) {
+        final Optional<TaskCompletionHandler> finishedTaskHandler = getCompletionHandlerForTask(task);
+        if (finishedTaskHandler.isPresent()) {
             taskExecutorService.submit(new Runnable() {
                 @Override
                 public void run() {
-                    finishedTaskProcessor.get().onSuccess(task, taskResult, agentName);
+                    finishedTaskHandler.get().onSuccess(task, taskResult, agentName);
                 }
             });
         }
@@ -56,12 +56,12 @@ public class TaskCompletionHandlerService {
      */
     public void onFail(final Task task, final Throwable exception) {
         final String agentName = NamesUtil.toLogFormat(task.getClusterInstanceUuid());
-        final Optional<TaskCompletionHandler> finishedTaskProcessor = getCompletionHandlerForTask(task);
-        if (finishedTaskProcessor.isPresent()) {
+        final Optional<TaskCompletionHandler> finishedTaskHandler = getCompletionHandlerForTask(task);
+        if (finishedTaskHandler.isPresent()) {
             taskExecutorService.submit(new Runnable() {
                 @Override
                 public void run() {
-                    finishedTaskProcessor.get().onFail(task, exception, agentName);
+                    finishedTaskHandler.get().onFail(task, exception, agentName);
                 }
             });
         }

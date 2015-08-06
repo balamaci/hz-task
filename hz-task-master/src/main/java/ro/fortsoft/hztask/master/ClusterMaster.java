@@ -21,7 +21,7 @@ import ro.fortsoft.hztask.master.router.RoundRobinRoutingStrategy;
 import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
-import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
+import ro.fortsoft.hztask.master.service.TaskCompletionHandlerProvider;
 import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.statistics.TaskActivityEntry;
@@ -48,7 +48,7 @@ public class ClusterMaster {
 
     private AsyncEventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
 
-    private ClusterMasterServiceImpl clusterMasterService;
+    private ClusterMasterService clusterMasterService;
 
 
     public ClusterMaster(MasterConfig masterConfig, Config hazelcastConfig) {
@@ -58,29 +58,35 @@ public class ClusterMaster {
 
         CommunicationService communicationService = new CommunicationService(hzInstance);
         hazelcastTopologyService = new HazelcastTopologyService(hzInstance, eventBus, communicationService);
-        clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService,
-                new CodahaleStatisticsService());
 
-        clusterDistributionService.setRoutingStrategy(getRoutingStrategy(masterConfig,
-                hazelcastTopologyService, clusterDistributionService.getStatisticsService()));
-        clusterDistributionService.setTaskTransitionLogKeeper(taskTransitionLogKeeper);
+        clusterDistributionService = initClusterDistributionService(masterConfig);
 
         checkNoOtherMasterClusterAmongMembers();
 
         registerMembershipListener();
 
         registerAlreadyPresentAgents();
-        hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(eventBus));
 
         unassignAnyPreviousTasks();
 
-        TaskCompletionHandlerService taskCompletionHandlerService = new TaskCompletionHandlerService(masterConfig);
-        clusterMasterService = new ClusterMasterServiceImpl(masterConfig,
-                clusterDistributionService, communicationService, taskCompletionHandlerService);
+        TaskCompletionHandlerProvider taskCompletionHandlerProvider = new TaskCompletionHandlerProvider(masterConfig);
+        clusterMasterService = new ClusterMasterService(clusterDistributionService,
+                communicationService, taskCompletionHandlerProvider);
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_CLUSTER_MASTER_SERVICE,
                 clusterMasterService);
 //        clusterMasterService.startUnassignedTasksReschedulerThread();
+    }
+
+    private ClusterDistributionService initClusterDistributionService(MasterConfig masterConfig) {
+        ClusterDistributionService clusterDistributionService = new ClusterDistributionService(hazelcastTopologyService,
+                new CodahaleStatisticsService());
+
+        clusterDistributionService.setRoutingStrategy(getRoutingStrategy(masterConfig,
+                hazelcastTopologyService, clusterDistributionService.getStatisticsService()));
+        clusterDistributionService.setTaskTransitionLogKeeper(taskTransitionLogKeeper);
+
+        return clusterDistributionService;
     }
 
     /**
@@ -110,7 +116,10 @@ public class ClusterMaster {
     private void registerMembershipListener() {
         AgentMembershipSubscriber agentMembershipSubscriber =
                 new AgentMembershipSubscriber(clusterDistributionService, hazelcastTopologyService);
+
         eventBus.register(agentMembershipSubscriber);
+
+        hzInstance.getCluster().addMembershipListener(new ClusterMembershipListener(eventBus));
     }
 
 

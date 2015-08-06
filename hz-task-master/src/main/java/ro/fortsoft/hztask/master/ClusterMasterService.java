@@ -8,7 +8,7 @@ import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
-import ro.fortsoft.hztask.master.service.TaskCompletionHandlerService;
+import ro.fortsoft.hztask.master.service.TaskCompletionHandlerProvider;
 import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 import ro.fortsoft.hztask.master.util.NamesUtil;
 
@@ -18,24 +18,21 @@ import java.util.Collection;
 /**
  * @author Serban Balamaci
  */
-public class ClusterMasterServiceImpl implements IClusterMasterService {
+public class ClusterMasterService implements IClusterMasterService {
 
-    private MasterConfig masterConfig;
     private ClusterDistributionService clusterDistributionService;
-    private TaskCompletionHandlerService taskCompletionHandlerService;
+    private TaskCompletionHandlerProvider taskCompletionHandlerProvider;
     private CommunicationService communicationService;
 
     private volatile boolean shuttingDown = false;
 
-    private Logger log = LoggerFactory.getLogger(ClusterMasterServiceImpl.class);
+    private Logger log = LoggerFactory.getLogger(ClusterMasterService.class);
 
-    public ClusterMasterServiceImpl(MasterConfig masterConfig,
-                                    ClusterDistributionService clusterDistributionService,
-                                    CommunicationService communicationService,
-                                    TaskCompletionHandlerService taskCompletionHandlerService) {
-        this.masterConfig = masterConfig;
+    public ClusterMasterService(ClusterDistributionService clusterDistributionService,
+                                CommunicationService communicationService,
+                                TaskCompletionHandlerProvider taskCompletionHandlerProvider) {
         this.clusterDistributionService = clusterDistributionService;
-        this.taskCompletionHandlerService = taskCompletionHandlerService;
+        this.taskCompletionHandlerProvider = taskCompletionHandlerProvider;
         this.communicationService = communicationService;
     }
 
@@ -45,7 +42,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
                 NamesUtil.toLogFormat(agentUuid));
         Task task = clusterDistributionService.finishedTask(taskKey, agentUuid, false);
 
-        taskCompletionHandlerService.onSuccess(task, response);
+        taskCompletionHandlerProvider.onSuccess(task, response);
     }
 
     @Override
@@ -54,7 +51,7 @@ public class ClusterMasterServiceImpl implements IClusterMasterService {
                 NamesUtil.toLogFormat(agentUuid));
         Task task = clusterDistributionService.finishedTask(taskKey, agentUuid, true);
 
-        taskCompletionHandlerService.onFail(task, exception);
+        taskCompletionHandlerProvider.onFail(task, exception);
     }
 
     public void shutdown() {
