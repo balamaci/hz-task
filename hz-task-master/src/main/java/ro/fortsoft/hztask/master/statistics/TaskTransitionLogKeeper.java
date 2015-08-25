@@ -4,8 +4,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimap;
 
-import static ro.fortsoft.hztask.master.statistics.TaskActivity.*;
-import static ro.fortsoft.hztask.master.statistics.TaskActivityEntry.create;
+import static ro.fortsoft.hztask.master.statistics.TaskStatus.*;
+import static ro.fortsoft.hztask.master.statistics.TaskTransition.create;
 
 /**
  * Keeps track of state transitions for tasks, doesn't play a role in the
@@ -15,7 +15,7 @@ import static ro.fortsoft.hztask.master.statistics.TaskActivityEntry.create;
  */
 public class TaskTransitionLogKeeper {
 
-    private Multimap<String, TaskActivityEntry> tracker = ArrayListMultimap.create();
+    private Multimap<String, TaskTransition> tracker = ArrayListMultimap.create();
 
     public void taskReceived(String id) {
         logTaskActivity(id, CREATED);
@@ -30,7 +30,7 @@ public class TaskTransitionLogKeeper {
     }
 
     public void taskReassigned(String id, String memberId) {
-        logTaskActivity(id, TaskActivity.REASSIGNED, memberId);
+        logTaskActivity(id, TaskStatus.REASSIGNED, memberId);
     }
 
     public synchronized void taskFinishedSuccess(String id) {
@@ -41,21 +41,21 @@ public class TaskTransitionLogKeeper {
         tracker.removeAll(id);
     }
 
-    private synchronized void addActivity(String id, TaskActivityEntry entry) {
+    private synchronized void addActivity(String id, TaskTransition entry) {
         tracker.put(id, entry);
     }
 
-    private void logTaskActivity(String id, TaskActivity taskActivity) {
-        TaskActivityEntry entry = create(taskActivity);
+    private void logTaskActivity(String id, TaskStatus taskStatus) {
+        TaskTransition entry = create(taskStatus);
         addActivity(id, entry);
     }
 
-    private void logTaskActivity(String id, TaskActivity taskActivity, String memberId) {
-        TaskActivityEntry entry = create(taskActivity, memberId);
+    private void logTaskActivity(String id, TaskStatus taskStatus, String memberId) {
+        TaskTransition entry = create(taskStatus, memberId);
         addActivity(id, entry);
     }
 
-    public synchronized ImmutableListMultimap<String, TaskActivityEntry> getDataCopy() {
+    public synchronized ImmutableListMultimap<String, TaskTransition> getDataCopy() {
         return ImmutableListMultimap.copyOf(tracker);
     }
 

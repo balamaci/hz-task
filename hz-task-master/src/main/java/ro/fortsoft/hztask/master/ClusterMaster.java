@@ -22,9 +22,9 @@ import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerProvider;
-import ro.fortsoft.hztask.master.statistics.CodahaleStatisticsService;
+import ro.fortsoft.hztask.master.statistics.codahale.CodahaleStatisticsService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
-import ro.fortsoft.hztask.master.statistics.TaskActivityEntry;
+import ro.fortsoft.hztask.master.statistics.TaskTransition;
 import ro.fortsoft.hztask.master.statistics.TaskTransitionLogKeeper;
 import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
 
@@ -155,15 +155,15 @@ public class ClusterMaster {
      * @param startedSecsAgo how many seconds ago the running tasks have started
      * @return Map of tasks uids and their list of transitions for Tasks that have
      */
-    public Multimap<String, TaskActivityEntry> getUnfinishedTasksActivityLog(int startedSecsAgo) {
-        ImmutableListMultimap<String, TaskActivityEntry> logData = taskTransitionLogKeeper.getDataCopy();
+    public Multimap<String, TaskTransition> getUnfinishedTasksActivityLog(int startedSecsAgo) {
+        ImmutableListMultimap<String, TaskTransition> logData = taskTransitionLogKeeper.getDataCopy();
         Date now = new Date();
         long agoMillis = now.getTime() - startedSecsAgo * 1000;
 
-        ArrayListMultimap<String, TaskActivityEntry> filteredData = ArrayListMultimap.create();
+        ArrayListMultimap<String, TaskTransition> filteredData = ArrayListMultimap.create();
 
         for(String taskId : logData.keySet()) {
-            ImmutableList<TaskActivityEntry> entries = logData.get(taskId);
+            ImmutableList<TaskTransition> entries = logData.get(taskId);
             if(entries.get(0).getEventDate().getTime() < agoMillis) {
                 filteredData.putAll(taskId, entries);
             }

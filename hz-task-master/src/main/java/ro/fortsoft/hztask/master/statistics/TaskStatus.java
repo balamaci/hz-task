@@ -3,7 +3,7 @@ package ro.fortsoft.hztask.master.statistics;
 /**
  * @author Serban Balamaci
  */
-public enum TaskActivity {
+public enum TaskStatus {
 
     CREATED,
     ASSIGNED,

@@ -1,7 +1,9 @@
-package ro.fortsoft.hztask.master.statistics;
+package ro.fortsoft.hztask.master.statistics.codahale;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
+import ro.fortsoft.hztask.master.statistics.IStatisticsService;
+
 /**
  * @author Serban Balamaci
  */
