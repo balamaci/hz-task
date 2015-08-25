@@ -108,7 +108,9 @@ The **Master** assigns the **Task**s to the active **Agents**, by an implementat
       3. Master can also make better decisions based on how "loaded" are all the agents in the cluster. It can also reassign pending tasks to a new member of the cluster.
       
 
+
  - Q: Does Hazelcast not have already something related to running tasks on remote nodes?
+
    A: It does, you just need to look at **IExecutorService .executeOnMember** however we chose to **focus on passing the data for the computation**, **not the computation itself**, because that would limit you to what you can do - imagine passing a computation that would need an actual http connection to retrieve a web page-. However I think this could be abstracted maybe into something like **PageFetcherService** and retrieve this kind of bean by dependency injection on the agents. Could be something to look into.
 
      By passing enough data for your computations on the agents you can have the libraries and frameworks of your choice on the that help solve complex scenarios.
