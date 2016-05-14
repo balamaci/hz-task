@@ -2,7 +2,6 @@ package ro.fortsoft.hztask.master.scheduler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ro.fortsoft.hztask.master.MasterConfig;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 
 /**
@@ -12,14 +11,12 @@ public class UnassignedTasksReschedulerThread extends Thread {
 
     private ClusterDistributionService clusterDistributionService;
 
-    private final long millisBetweenRuns = 5000;
+    private static final long TIME_TO_SLEEP_WHEN_NO_TASK_FOUND = 5000;
 
     private static final Logger log = LoggerFactory.getLogger(UnassignedTasksReschedulerThread.class);
 
-    public UnassignedTasksReschedulerThread(ClusterDistributionService clusterDistributionService,
-                                            MasterConfig masterConfig) {
+    public UnassignedTasksReschedulerThread(ClusterDistributionService clusterDistributionService) {
         this.clusterDistributionService = clusterDistributionService;
-//        this.millisBetweenRuns = masterConfig.getUnassignedTaskReschedulerWaitTimeMs();
     }
 
     @Override
@@ -43,7 +40,7 @@ public class UnassignedTasksReschedulerThread extends Thread {
                 }
 
                 if(! taskFound) {
-                    Thread.sleep(millisBetweenRuns);
+                    Thread.sleep(TIME_TO_SLEEP_WHEN_NO_TASK_FOUND);
                 }
             } catch (InterruptedException e) {
                 log.info("{} received interrupt, terminating", getName());

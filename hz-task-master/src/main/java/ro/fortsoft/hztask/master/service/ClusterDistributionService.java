@@ -62,7 +62,7 @@ public class ClusterDistributionService {
         tasksDistributionThread = new TasksDistributionThread(this);
     }
 
-    public void enqueueTask(Task task) {
+    public void queueTask(Task task) {
         TaskKey taskKey = new TaskKey(task.getId());
         task.setClusterInstanceUuid(LOCAL_MASTER_UUID);
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
@@ -78,7 +78,7 @@ public class ClusterDistributionService {
 
     }
 
-    public void rescheduleTask(TaskKey taskKey) {
+    private void rescheduleTask(TaskKey taskKey) {
         Task task = tasks.get(taskKey);
         task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
@@ -111,7 +111,7 @@ public class ClusterDistributionService {
         }
     }
 
-    public void unassignTask(TaskKey taskKey) {
+    private void unassignTask(TaskKey taskKey) {
         Task task = tasks.get(taskKey);
 
         if (!LOCAL_MASTER_UUID.equals(task.getClusterInstanceUuid())) {
@@ -188,17 +188,12 @@ public class ClusterDistributionService {
         }
     }
 
-    public synchronized void shutdown() {
-        shuttingDown = true;
-        tasksDistributionThread.interrupt();
-    }
 
-
-    public Collection<Task> queryTasks(Predicate predicate) {
+    private Collection<Task> queryTasks(Predicate predicate) {
         return tasks.values(predicate);
     }
 
-    public Set<TaskKey> queryTaskKeys(Predicate predicate) {
+    private Set<TaskKey> queryTaskKeys(Predicate predicate) {
         return tasks.keySet(predicate);
     }
 
@@ -215,7 +210,7 @@ public class ClusterDistributionService {
 
         Predicate selectionPredicate = Predicates.and(oldTaskPredicate, notAssigned);
         int batchSize = 100;
-        for (; ; ) {
+        while (true) {
             boolean moreTasksFound = unassignMatchedTasks(batchSize, selectionPredicate);
             if(! moreTasksFound) {
                 break;
@@ -230,7 +225,7 @@ public class ClusterDistributionService {
     public void rescheduleAgentTasks(String agentUuid) {
         Predicate selectionPredicate = Predicates.equal("clusterInstanceUuid", agentUuid);
 
-        for (; ; ) {
+        while(true) {
             boolean moreTasksFound = rescheduleMatchedTasks(100, selectionPredicate);
             if(! moreTasksFound) {
                 break;
@@ -238,12 +233,23 @@ public class ClusterDistributionService {
         }
     }
 
+    /**
+     * Reschedule unassigned tasks to agents
+     * @param batchSize size of the reasigning batch
+     * @return true if tasks unassigned were found
+     */
     public boolean rescheduleUnassignedTasks(int batchSize) {
         Predicate selectionPredicate = Predicates.equal("clusterInstanceUuid", LOCAL_MASTER_UUID);
         return rescheduleMatchedTasks(batchSize, selectionPredicate);
     }
 
-    public boolean unassignMatchedTasks(int batchSize, Predicate selectionPredicate) {
+    /**
+     *
+     * @param batchSize
+     * @param selectionPredicate
+     * @return
+     */
+    private boolean unassignMatchedTasks(int batchSize, Predicate selectionPredicate) {
         PagingPredicate pagingPredicate = new PagingPredicate(selectionPredicate,
                 new PriorityAndOldestTaskComparator(),
                 batchSize);
@@ -258,7 +264,7 @@ public class ClusterDistributionService {
         return foundTasks.size() > 0;
     }
 
-    public boolean rescheduleMatchedTasks(int batchSize, Predicate selectionPredicate) {
+    private boolean rescheduleMatchedTasks(int batchSize, Predicate selectionPredicate) {
 
         PagingPredicate pagingPredicate = new PagingPredicate(selectionPredicate,
                 new PriorityAndOldestTaskComparator(),
@@ -272,6 +278,11 @@ public class ClusterDistributionService {
         }
 
         return foundTasks.size() > 0;
+    }
+
+    public synchronized void shutdown() {
+        shuttingDown = true;
+        tasksDistributionThread.interrupt();
     }
 
     public int getTaskCount() {

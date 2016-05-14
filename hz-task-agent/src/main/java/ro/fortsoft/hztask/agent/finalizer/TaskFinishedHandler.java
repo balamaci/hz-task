@@ -20,7 +20,6 @@ import java.util.concurrent.Future;
 
 /**
  *
- *
  * @author sbalamaci
  */
 public class TaskFinishedHandler {
@@ -38,8 +37,9 @@ public class TaskFinishedHandler {
 
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFailedOp(taskKey, exception,
                 ClusterUtil.getLocalMemberUuid(hzInstance)));
-        waitForConfirmationFromMaster(masterNotified);
-
+        if(masterNotified.isPresent()) {
+            waitForConfirmationFromMaster(masterNotified.get());
+        }
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
 
@@ -48,20 +48,20 @@ public class TaskFinishedHandler {
 
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFinishedOp(taskKey, result,
                 ClusterUtil.getLocalMemberUuid(hzInstance)));
-        waitForConfirmationFromMaster(masterNotified);
+        if(masterNotified.isPresent()) {
+            waitForConfirmationFromMaster(masterNotified.get());
+        }
 
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
 
-    private void waitForConfirmationFromMaster(Optional<Future> futureOptional) {
-        if(futureOptional.isPresent()) {
-            try {
-                futureOptional.get().get();
-            } catch (InterruptedException e) {
-                log.info("Callback for Master notification received an interrupt signal, stopping");
-            } catch (ExecutionException e) {
-                log.error("Task {}, failed to notify Master of it's status", e);
-            }
+    private void waitForConfirmationFromMaster(Future masterNotification) {
+        try {
+            masterNotification.get();
+        } catch (InterruptedException e) {
+            log.info("Callback for Master notification received an interrupt signal, stopping");
+        } catch (ExecutionException e) {
+            log.error("Task {}, failed to notify Master of it's status", e);
         }
     }
 

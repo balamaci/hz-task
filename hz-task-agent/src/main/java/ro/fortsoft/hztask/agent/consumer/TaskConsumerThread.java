@@ -58,10 +58,11 @@ public class TaskConsumerThread extends Thread {
                 break;
             }
             try {
-//                log.info("Returned " + eligibleTasks.size() + " remaining " + runningTasksQueue.remainingCapacity());
                 boolean foundTask = false;
 
                 Set<TaskKey> eligibleTasks = retrieveTasksAssignedToInstanceId(localClusterId);
+
+//                log.debug("Returned " + eligibleTasks.size() + " remaining " + runningTasksQueue.remainingCapacity());
 
                 for (TaskKey taskKey : eligibleTasks) {
                     if (!runningTasksQueue.contains(taskKey)) {
@@ -107,8 +108,8 @@ public class TaskConsumerThread extends Thread {
     }
 
     /**
-     *
-     * @param taskKey
+     * Remove task from queue of runningTasks
+     * @param taskKey taskKey
      */
     public void removeFromRunningTasksQueue(TaskKey taskKey) {
         runningTasksQueue.remove(taskKey);

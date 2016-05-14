@@ -94,7 +94,7 @@ public class ClusterMaster {
      * @param task task
      */
     public void submitTask(Task task) {
-        clusterDistributionService.enqueueTask(task);
+        clusterDistributionService.queueTask(task);
     }
 
     /**

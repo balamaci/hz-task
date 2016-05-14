@@ -1,21 +1,40 @@
 hz-task
 =======
 
-Open source framework(Apache license) for easy distributed task processing built upon the [Hazelcast](http://hazelcast.org/) framework.
+Open source framework(Apache license) for easy distributed task processing built upon the [Hazelcast]() framework.
+Just drop the **hz-task..** dependencies and start defining the tasks for processing.
 
 ### Intro
 
-Hazelcast framework makes sharing data between separate machines/processes very easy because :
+Hazelcast is a java framework that makes sharing data structures between separate machines/processes very easy.
+  
+For ex. if we would have a very big Map with millions of entries that would not fit in memory on a single VM,
+Hazelcast is able to **shard**(split) the map between multiple cluster nodes to reduce the memory consumption(making 
+it posible to store large quantities of data, on machines that don't have a high amount of memory), and also backed 
+up by making copies which makes the information resilient so even in case of some nodes of the cluster go down,
+there will be no information loss. 
 
-    - Easy configuration to setup the cluster(zero conf if on the same lan, you can just start two separate processes and they will join up and create a cluster). 
-    - Easy to detect when a cluster member joins or leaves.
-    - It's used embedded in your application.
-    
-It's only natural that we try to build a distributed task processing framework on top of it.
+This is very useful in today's world where we can cheaply start many instances/containers with low memory and can
+  also 
 
-### What you need to do
+Hazelcast also offers the possibility to easily build a cluster by specifying where it's members are located
+(or autodiscovery if network allows multicast) also a hearbeat mechanism detect when a cluster member leaves.
 
- - Define a **Task** class to hold information for an **Agent** to process. If we are building a web crawler for example a ParseWebPageTask will need to hold the url of the webpage to be parsed.
+It's only natural that we try and build a distributed task processing framework on top of it.
+
+### What you need to do to get going
+
+We'll start by trying to solve a realcase problem - implementing a web crawler-.
+This is a very time consuming process to do on a single machine because of the latency of the response from the hosts 
+or to keep too many connections active to the sites. 
+
+It would be better to have the tasks distributed to many nodes in a cluster.   
+
+#### 1. Task - the data holder  
+
+First we define a **Task** class to supply the information for an **Agent** he need to be able to process his task. 
+For our web crawler it will need to hold the url of the webpage to be parsed.
+ 
  ```java
  public class GetWebPageTask extends Task {
 
@@ -31,8 +50,10 @@ It's only natural that we try to build a distributed task processing framework o
  }
  ```
 
- - Implement a **TaskProcessor** that will be used by the agents to do the actual work, in this example 
- the **WebPageRequestTaskProcessor** is retrieving the web page and returns it as a String.
+#### 2. TaskProcessor - for deployment on agents 
+Implement a **TaskProcessor** this will be used by the agents to do the actual work like retrieving the web page
+It contains actual logic on how to process the tasks.
+
  ```java
  @Component
  public class WebPageRequestTaskProcessor implements TaskProcessor<String> {
@@ -56,9 +77,10 @@ It's only natural that we try to build a distributed task processing framework o
         }
     }
  ```
-
-    Package this class in a jar file along with the **hz-task-agent** and deploy it on as many machines as you want to make up your agents.
- From here to starting the Agent is no complicated than
+ 
+ Package this class in a jar file along with the **hz-task-agent** dependency and deploy it on as many machines as you want to make up your agents.
+ 
+ Now just start the Agent:
  
  ```java
  public class StartTestClient {
@@ -66,22 +88,31 @@ It's only natural that we try to build a distributed task processing framework o
     public static void main(String[] args) {
         AgentConfig agentConfig = new AgentConfig();
 
+        //we register the task processor for GetWebPageTask to be provided through Spring
+        //that way our WebPageRequestTaskProcessor         
         agentConfig.registerTaskProcessorFactory(GetWebPageTask.class,
                      new SpringBeanFactory(context, WebPageRequestTaskProcessor));
 
         new ClusterAgent(agentConfig, hazelcastConfig);
     }
  }
- ``` 
+```
+ 
+#### TaskCompletionHandler - how you handle the result of the processing
+We define a **TaskCompletionHandler** on the single **Master** node to handle the result of the processed tasks.
 
- - Define a **TaskCompletionHandler** on the single **Master** node to handle the result of the processed task like maybe for our crawler example to persist the html to a NoSQL storage, or just output to console like below.
+```java
+public interface TaskCompletionHandler<T extends Task> {
 
-That is basically all you need to get started.
+    public void onSuccess(T task, Object taskResult, String agentName);
 
+    public void onFail(T task, Throwable throwable, String agentName);
 
+}
+```
 
-As a sidenote with the addition of cluster nodes, a hazelcast **distributed Map** can also be **sharded**(split) among cluster nodes to reduce the memory consumption(making it posible to store large quantities of data, on machines that don't have a high amount of memory). and also backed up by making copies which makes the information resilient so even in case of some nodes of the cluster go down, there will be no information loss.
-Currently there is a single point of failure, the **Cluster Master** but on next versions I propose we have more than one master 
+In our crawler example to persist the html to storage, or just output to console like below.
+
 
 ### Concept
 
@@ -95,23 +126,22 @@ The **Master** assigns the **Task**s to the active **Agents**, by an implementat
    - If an **Agent** leaves the cluster, the **Master** can reassign the dead **Agent**'s tasks to other available **Agent**s. 
    - If no active **Agent**s have registered with the **Master**, the tasks are kept with the Master until an agent becomes available. 
 
-### Quick setup
-
-
 ### FAQs
- - Q: How is it different than a **PubSub** solution through an MQ server implementation like **RabbitMQ / Kafka**?
  
-   A: It's different but I'm not saying you could not implement the same on top of a MQ solution. 
-      1. You don't need an external dependency. And by dependency I'm refering to both a separate server / process with own configuration(RabbitMQ, Kafka) and extra libraries. With this it's all a java library, all you need to do is import this library in your project.
-      2. Master knows where each task is executing and make better decisions on where to retry the task if certain nodes begin experiencing failures for certain types of tasks or if an agent is dropped from the cluster the Master known and his work can be reassigned.
+   - Q: How is it different than a **PubSub** solution through an MQ server implementation like **RabbitMQ**?
+     A: 
+      1. You don't need an external dependency, it's all java, all you need to do is import the library in your project.
+      2. Master knows where each task is executing and make better decisions on where to retry the task if certain nodes begin experiencing failures for certain types of tasks or if an agent is dropped from the cluster his work can be reassigned.
       3. Master can also make better decisions based on how "loaded" are all the agents in the cluster. It can also reassign pending tasks to a new member of the cluster.
-
       
+      But for sure with some extra work you could build a similar solution on top of a MQ solution. 
 
+   - Q: Does Hazelcast not have already something related to running tasks on remote nodes?
+     A: It does, you just need to look at **IExecutorService .executeOnMember** however we chose to **focus on passing the data for the computation**, **not the computation itself**, because that would limit you to what you can do - imagine passing a computation that would need an http connection to retrieve a web page-. 
+     By passing enough data for your computations on the agents you can have the libraries and frameworks of your choice on the that help solve complex scenarios.
 
- - Q: Does Hazelcast not have already something related to running tasks on remote nodes?
+### What we should improve
 
-   A: It does, you just need to look at **IExecutorService .executeOnMember** however we chose to **focus on passing the data for the computation**, **not the computation itself**, because that would limit you to what you can do - imagine passing a computation that would need an actual http connection to retrieve a web page-. However I think this could be abstracted maybe into something like **PageFetcherService** and retrieve this kind of bean by dependency injection on the agents. Could be something to look into.
-
-    By passing enough data for your computations on the agents you can have the libraries and frameworks of your choice on the that help solve complex scenarios.
-
+    - Currently no task stealing options. If a new member joins the cluster the master will not distribute a large queue
+    of tasks that was assigned to an agent. 
+    - No multiple masters to standby available.

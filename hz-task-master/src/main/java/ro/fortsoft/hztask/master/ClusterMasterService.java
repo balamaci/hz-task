@@ -24,8 +24,6 @@ public class ClusterMasterService implements IClusterMasterService {
     private TaskCompletionHandlerProvider taskCompletionHandlerProvider;
     private CommunicationService communicationService;
 
-    private volatile boolean shuttingDown = false;
-
     private Logger log = LoggerFactory.getLogger(ClusterMasterService.class);
 
     public ClusterMasterService(ClusterDistributionService clusterDistributionService,
@@ -54,9 +52,10 @@ public class ClusterMasterService implements IClusterMasterService {
         taskCompletionHandlerProvider.onFail(task, exception);
     }
 
+    /**
+     * shutdown master and agents
+     */
     public void shutdown() {
-        shuttingDown = true;
-
         clusterDistributionService.shutdown();
         HazelcastTopologyService hazelcastTopologyService = clusterDistributionService.getHazelcastTopologyService();
         Collection<Member> members = hazelcastTopologyService.getAgentsCopy();
