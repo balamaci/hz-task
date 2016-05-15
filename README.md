@@ -1,21 +1,20 @@
 hz-task
 =======
 
-Open source framework(Apache license) for easy distributed task processing built upon the [Hazelcast]() framework.
-Just drop the **hz-task..** dependencies and start defining the tasks for processing.
+Open source framework(Apache license) for easy distributed task processing built upon the [Hazelcast](https://github.com/hazelcast/hazelcast/) framework.
+Just drop the **hz-task** dependencies and start defining the tasks for processing.
 
 ### Intro
 
 Hazelcast is a java framework that makes sharing data structures between separate machines/processes very easy.
   
 For ex. if we would have a very big Map with millions of entries that would not fit in memory on a single VM,
-Hazelcast is able to **shard**(split) the map between multiple cluster nodes to reduce the memory consumption(making 
-it posible to store large quantities of data, on machines that don't have a high amount of memory), and also backed 
+Hazelcast is able to **shard**(split) the map between multiple cluster nodes to reduce the memory footprint per node(making 
+it possible to store large quantities of data, on machines that don't have a high amount of memory), and also backed 
 up by making copies which makes the information resilient so even in case of some nodes of the cluster go down,
 there will be no information loss. 
 
-This is very useful in today's world where we can cheaply start many instances/containers with low memory and can
-  also 
+This is very useful in today's world where we can cheaply start many instances/containers with low memory.
 
 Hazelcast also offers the possibility to easily build a cluster by specifying where it's members are located
 (or autodiscovery if network allows multicast) also a hearbeat mechanism detect when a cluster member leaves.
@@ -28,7 +27,8 @@ We'll start by trying to solve a realcase problem - implementing a web crawler-.
 This is a very time consuming process to do on a single machine because of the latency of the response from the hosts 
 or to keep too many connections active to the sites. 
 
-It would be better to have the tasks distributed to many nodes in a cluster.   
+It would be better to have the tasks distributed to many nodes in a cluster and have a master node to which
+you submit the list of sites to crawl and let it handle the results.
 
 #### 1. Task - the data holder  
 
@@ -50,7 +50,7 @@ For our web crawler it will need to hold the url of the webpage to be parsed.
  }
  ```
 
-#### 2. TaskProcessor - for deployment on agents 
+#### 2. TaskProcessor - the processor of the Task - deployed on Agents
 Implement a **TaskProcessor** this will be used by the agents to do the actual work like retrieving the web page
 It contains actual logic on how to process the tasks.
 
@@ -78,7 +78,9 @@ It contains actual logic on how to process the tasks.
     }
  ```
  
- Package this class in a jar file along with the **hz-task-agent** dependency and deploy it on as many machines as you want to make up your agents.
+
+ #### 3. Package in jar for deployment on Agents 
+ Package the TaskProcessors classes in a jar file along with the **hz-task-agent** dependency and deploy it on as many machines as you want to make up your agents.
  
  Now just start the Agent:
  
@@ -98,7 +100,7 @@ It contains actual logic on how to process the tasks.
  }
 ```
  
-#### TaskCompletionHandler - how you handle the result of the processing
+#### 4. TaskCompletionHandler - handles the result of the processing - to be deployed on Master
 We define a **TaskCompletionHandler** on the single **Master** node to handle the result of the processed tasks.
 
 ```java
@@ -140,8 +142,10 @@ The **Master** assigns the **Task**s to the active **Agents**, by an implementat
      A: It does, you just need to look at **IExecutorService .executeOnMember** however we chose to **focus on passing the data for the computation**, **not the computation itself**, because that would limit you to what you can do - imagine passing a computation that would need an http connection to retrieve a web page-. 
      By passing enough data for your computations on the agents you can have the libraries and frameworks of your choice on the that help solve complex scenarios.
 
+
 ### What we should improve
 
-    - Currently no task stealing options. If a new member joins the cluster the master will not distribute a large queue
-    of tasks that was assigned to an agent. 
-    - No multiple masters to standby available.
+   - Currently no task stealing options. If a new member joins the cluster the master will not distribute a large queue
+of tasks that was assigned to an agent. 
+
+   - No multiple masters to standby available.
