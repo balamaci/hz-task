@@ -1,10 +1,14 @@
 package ro.fortsoft.hztask.master.statistics;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Multimap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import static ro.fortsoft.hztask.master.statistics.TaskStatus.*;
+import static ro.fortsoft.hztask.master.statistics.TaskStatus.ASSIGNED;
+import static ro.fortsoft.hztask.master.statistics.TaskStatus.CREATED;
+import static ro.fortsoft.hztask.master.statistics.TaskStatus.UNASSIGNED;
 import static ro.fortsoft.hztask.master.statistics.TaskTransition.create;
 
 /**
@@ -15,7 +19,7 @@ import static ro.fortsoft.hztask.master.statistics.TaskTransition.create;
  */
 public class TaskTransitionLogKeeper {
 
-    private Multimap<String, TaskTransition> tracker = ArrayListMultimap.create();
+    private Map<String, List<TaskTransition>> tracker = new ConcurrentHashMap<>();
 
     public void taskReceived(String id) {
         logTaskActivity(id, CREATED);
@@ -33,16 +37,17 @@ public class TaskTransitionLogKeeper {
         logTaskActivity(id, TaskStatus.REASSIGNED, memberId);
     }
 
-    public synchronized void taskFinishedSuccess(String id) {
-        tracker.removeAll(id);
+    public void taskFinishedSuccess(String id) {
+        tracker.remove(id);
     }
 
-    public synchronized void taskFinishedFailure(String id) {
-        tracker.removeAll(id);
+    public void taskFinishedFailure(String id) {
+        tracker.remove(id);
     }
 
-    private synchronized void addActivity(String id, TaskTransition entry) {
-        tracker.put(id, entry);
+    private void addActivity(String id, TaskTransition entry) {
+        List<TaskTransition> transitions  = tracker.computeIfAbsent(id, key -> new CopyOnWriteArrayList<>());
+        transitions.add(entry);
     }
 
     private void logTaskActivity(String id, TaskStatus taskStatus) {
@@ -55,8 +60,8 @@ public class TaskTransitionLogKeeper {
         addActivity(id, entry);
     }
 
-    public synchronized ImmutableListMultimap<String, TaskTransition> getDataCopy() {
-        return ImmutableListMultimap.copyOf(tracker);
+    public Map<String, List<TaskTransition>> getDataCopy() {
+        return new HashMap<>(tracker);
     }
 
 }

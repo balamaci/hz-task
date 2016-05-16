@@ -1,9 +1,5 @@
 package ro.fortsoft.hztask.master;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.eventbus.AsyncEventBus;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
@@ -22,15 +18,22 @@ import ro.fortsoft.hztask.master.router.RoutingStrategy;
 import ro.fortsoft.hztask.master.service.ClusterDistributionService;
 import ro.fortsoft.hztask.master.service.CommunicationService;
 import ro.fortsoft.hztask.master.service.TaskCompletionHandlerProvider;
-import ro.fortsoft.hztask.master.statistics.codahale.CodahaleStatisticsService;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 import ro.fortsoft.hztask.master.statistics.TaskTransition;
 import ro.fortsoft.hztask.master.statistics.TaskTransitionLogKeeper;
+import ro.fortsoft.hztask.master.statistics.codahale.CodahaleStatisticsService;
 import ro.fortsoft.hztask.master.topology.HazelcastTopologyService;
+import ro.fortsoft.hztask.master.util.ConfigUtil;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Serban Balamaci
@@ -52,7 +55,9 @@ public class ClusterMaster {
 
 
     public ClusterMaster(MasterConfig masterConfig, Config hazelcastConfig) {
-        hzInstance = Hazelcast.newHazelcastInstance(hazelcastConfig);
+        Config hzConfigWithInternal = ConfigUtil.addInternalConfig(hazelcastConfig, 1);
+
+        hzInstance = Hazelcast.newHazelcastInstance(hzConfigWithInternal);
 
         hzInstance.getUserContext().put(HzKeysConstants.USER_CONTEXT_MEMBER_TYPE, MemberType.MASTER);
 
@@ -155,21 +160,18 @@ public class ClusterMaster {
      * @param startedSecsAgo how many seconds ago the running tasks have started
      * @return Map of tasks uids and their list of transitions for Tasks that have
      */
-    public Multimap<String, TaskTransition> getUnfinishedTasksActivityLog(int startedSecsAgo) {
-        ImmutableListMultimap<String, TaskTransition> logData = taskTransitionLogKeeper.getDataCopy();
-        Date now = new Date();
-        long agoMillis = now.getTime() - startedSecsAgo * 1000;
+    public Map<String, List<TaskTransition>> getUnfinishedTasksActivityLog(int startedSecsAgo) {
+        Map<String, List<TaskTransition>> logData = taskTransitionLogKeeper.getDataCopy();
 
-        ArrayListMultimap<String, TaskTransition> filteredData = ArrayListMultimap.create();
+        LocalDateTime timeAgo = LocalDateTime.now().minus(startedSecsAgo, ChronoUnit.SECONDS);
+        Predicate<TaskTransition> isOlder = (transition) -> transition.getEventDate().isBefore(timeAgo);
 
-        for(String taskId : logData.keySet()) {
-            ImmutableList<TaskTransition> entries = logData.get(taskId);
-            if(entries.get(0).getEventDate().getTime() < agoMillis) {
-                filteredData.putAll(taskId, entries);
-            }
-        }
-
-        return filteredData;
+        return logData.entrySet().stream()
+                .filter(entry -> {
+                    Optional<TaskTransition> first = entry.getValue().stream().findFirst();
+                    return first.isPresent() && isOlder.test(first.get());
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private void unassignAnyPreviousTasks() {

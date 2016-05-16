@@ -43,7 +43,7 @@ public class ClusterDistributionService {
 
     private TaskTransitionLogKeeper taskTransitionLogKeeper;
 
-    //
+    /**internal counter to keep track of the order of processed tasks**/
     private AtomicLong latestTaskCounter;
 
     private static final String LOCAL_MASTER_UUID = "-1";
@@ -51,6 +51,9 @@ public class ClusterDistributionService {
     private volatile boolean shuttingDown = false;
 
     private static final Logger log = LoggerFactory.getLogger(ClusterDistributionService.class);
+
+    /** the number of task remaining for an Agent before the Master restarts distributing tasks **/
+    private static final int MIN_RUN_TASK_REMAINING = 10;
 
     public ClusterDistributionService(HazelcastTopologyService hazelcastTopologyService,
                                       IStatisticsService statisticsService) {
@@ -62,6 +65,10 @@ public class ClusterDistributionService {
         tasksDistributionThread = new TasksDistributionThread(this);
     }
 
+    /**
+     * Add task for distribution to Agents
+     * @param task Task
+     */
     public void queueTask(Task task) {
         TaskKey taskKey = new TaskKey(task.getId());
         task.setClusterInstanceUuid(LOCAL_MASTER_UUID);
@@ -72,10 +79,7 @@ public class ClusterDistributionService {
 
         taskTransitionLogKeeper.taskReceived(taskKey.getTaskId());
 
-//        if(statisticsService.getBacklogTaskCount(task.getTaskType()) == 0) { //why only for 0?
-            startTaskDistributionThread();
-//        }
-
+        startTaskDistributionThread();
     }
 
     private void rescheduleTask(TaskKey taskKey) {
@@ -153,13 +157,13 @@ public class ClusterDistributionService {
             taskTransitionLogKeeper.taskFinishedSuccess(taskKey.getTaskId());
         }
 
-        if(shouldReStartTaskDistributionThread(agentUuid)) {
+        if(shouldReStartTaskDistributionThread(agentUuid, MIN_RUN_TASK_REMAINING)) {
             startTaskDistributionThread();
         }
         return task;
     }
 
-    private boolean shouldReStartTaskDistributionThread(String agentUuid) {
+    private boolean shouldReStartTaskDistributionThread(String agentUuid, int minRemainingTasks) {
         long totalSubmitted = statisticsService.getSubmittedTasks(agentUuid);
         long totalProcessed = statisticsService.getFinishedTasks(agentUuid)
                 + statisticsService.getFailedTasks(agentUuid);
@@ -167,7 +171,7 @@ public class ClusterDistributionService {
         long remaining = totalSubmitted - totalProcessed;
         log.info("{} Remaining tasks for {}", remaining, NamesUtil.toLogFormat(agentUuid));
 
-        return remaining < 10;
+        return remaining < minRemainingTasks;
     }
 
     public synchronized void startTaskDistributionThread() {

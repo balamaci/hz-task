@@ -79,8 +79,8 @@ It contains actual logic on how to process the tasks.
  ```
  
 
- #### 3. Package in jar for deployment on Agents 
- Package the TaskProcessors classes in a jar file along with the **hz-task-agent** dependency and deploy it on as many machines as you want to make up your agents.
+#### 3. Package in jar for deployment on Agents 
+Package the TaskProcessors classes in a jar file along with the **hz-task-agent** dependency and deploy it on as many machines as you want to make up your agents.
  
  Now just start the Agent:
  

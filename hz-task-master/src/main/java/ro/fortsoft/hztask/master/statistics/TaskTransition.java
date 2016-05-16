@@ -1,6 +1,6 @@
 package ro.fortsoft.hztask.master.statistics;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 /**
  * Describes a Task transition who processed the tasks and when
@@ -10,12 +10,12 @@ import java.util.Date;
 public class TaskTransition {
 
     private final TaskStatus type;
-    private final Date eventDate;
+    private final LocalDateTime eventDate;
     private String memberId;
 
     private TaskTransition(TaskStatus type, String memberId) {
         this.type = type;
-        this.eventDate = new Date();
+        this.eventDate = LocalDateTime.now();
         this.memberId = memberId;
     }
 
@@ -31,7 +31,7 @@ public class TaskTransition {
         return type;
     }
 
-    public Date getEventDate() {
+    public LocalDateTime getEventDate() {
         return eventDate;
     }
 
