@@ -1,8 +1,9 @@
 package ro.fortsoft.hztask.master.router;
 
-import com.google.common.base.Optional;
 import com.hazelcast.core.Member;
 import ro.fortsoft.hztask.common.task.Task;
+
+import java.util.Optional;
 
 /**
  * Generic interface for implementing different strategies of assigning

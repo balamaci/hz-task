@@ -2,7 +2,7 @@ hz-task
 =======
 
 Open source framework(Apache license) for easy distributed task processing built upon the [Hazelcast](https://github.com/hazelcast/hazelcast/) framework.
-Just drop the **hz-task** dependencies and start defining the tasks for processing.
+Just drop the **hz-task** dependencies in your project and start defining the tasks for processing.
 
 ### Intro
 
@@ -57,6 +57,7 @@ It contains actual logic on how to process the tasks.
  ```java
  @Component
  public class WebPageRequestTaskProcessor implements TaskProcessor<String> {
+    
     @Inject
     private HttpClient httpClient;
 
@@ -91,7 +92,7 @@ Package the TaskProcessors classes in a jar file along with the **hz-task-agent*
         AgentConfig agentConfig = new AgentConfig();
 
         //we register the task processor for GetWebPageTask to be provided through Spring
-        //that way our WebPageRequestTaskProcessor         
+        //that way our WebPageRequestTaskProcessor can receive any @Inject/@Autowired dependencies defined on the Agents         
         agentConfig.registerTaskProcessorFactory(GetWebPageTask.class,
                      new SpringBeanFactory(context, WebPageRequestTaskProcessor));
 

@@ -1,6 +1,5 @@
 package ro.fortsoft.hztask.agent.finalizer;
 
-import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IExecutorService;
 import com.hazelcast.core.Member;
@@ -15,6 +14,7 @@ import ro.fortsoft.hztask.op.master.AbstractMasterOp;
 import ro.fortsoft.hztask.util.ClusterUtil;
 
 import java.io.Serializable;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -38,7 +38,7 @@ public class TaskFinishedHandler {
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFailedOp(taskKey, exception,
                 ClusterUtil.getLocalMemberUuid(hzInstance)));
         if(masterNotified.isPresent()) {
-            waitForConfirmationFromMaster(masterNotified.get());
+            waitForConfirmationFromMaster(taskKey, masterNotified.get());
         }
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
@@ -49,19 +49,19 @@ public class TaskFinishedHandler {
         Optional<Future> masterNotified = sendToMaster(new NotifyMasterTaskFinishedOp(taskKey, result,
                 ClusterUtil.getLocalMemberUuid(hzInstance)));
         if(masterNotified.isPresent()) {
-            waitForConfirmationFromMaster(masterNotified.get());
+            waitForConfirmationFromMaster(taskKey, masterNotified.get());
         }
 
         clusterAgentService.getTaskConsumerThread().removeFromRunningTasksQueue(taskKey);
     }
 
-    private void waitForConfirmationFromMaster(Future masterNotification) {
+    private void waitForConfirmationFromMaster(TaskKey taskKey, Future masterNotification) {
         try {
             masterNotification.get();
         } catch (InterruptedException e) {
             log.info("Callback for Master notification received an interrupt signal, stopping");
         } catch (ExecutionException e) {
-            log.error("Task {}, failed to notify Master of it's status", e);
+            log.error("Task " + taskKey.getTaskId() + " - failed to notify Master of it's status", e);
         }
     }
 
@@ -75,7 +75,7 @@ public class TaskFinishedHandler {
             return Optional.of(executorService.submitToMember(masterOp, master));
         } else {
             log.info("Wanted to notify Master but Master left"); //maybe
-            return Optional.absent();
+            return Optional.empty();
         }
     }
 

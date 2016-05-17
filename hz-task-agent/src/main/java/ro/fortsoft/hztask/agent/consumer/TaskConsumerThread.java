@@ -4,6 +4,8 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.SqlPredicate;
+import javaslang.Tuple;
+import javaslang.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.agent.ClusterAgentService;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public class TaskConsumerThread extends Thread {
 
-    /** Queue that keeps the current tasks running - so that between ack from Master that
+    /** Queue that keeps the current tasks running - so that between ACK from Master that
      * it received the finished task, we do not start processing it again on the Agent**/
     private BlockingQueue<TaskKey> runningTasksQueue; //BlockingQueue is Threadsafe
 
@@ -61,11 +63,14 @@ public class TaskConsumerThread extends Thread {
 
             try {
                 Set<TaskKey> eligibleTaskKey = retrieveTasksAssignedToInstanceIdOrdered(localClusterId);
-                List<Task> eligibleTask = filterAlreadyRunningTasks(eligibleTaskKey);
+                List<Tuple2<TaskKey, Task>> eligibleTask = filterAlreadyRunningTasks(eligibleTaskKey);
 
                 log.debug("Returned {} processingNow={}", eligibleTask.size(), runningTasksQueue.size());
 
-                eligibleTask.stream().forEachOrdered(startProcessingTask(task));
+                for(Tuple2<TaskKey, Task> taskTuple : eligibleTask ) {
+                    startProcessingTask(taskTuple._1, taskTuple._2);
+                }
+
                 if (eligibleTask.isEmpty()) {
                     log.debug("No Tasks found to process, sleeping a while...");
                     Thread.sleep(2000);
@@ -81,12 +86,13 @@ public class TaskConsumerThread extends Thread {
         log.info("TaskConsumer Thread terminated");
     }
 
-    private List<Task> filterAlreadyRunningTasks(Set<TaskKey> eligibleTasks ) {
+    private List<Tuple2<TaskKey, Task>> filterAlreadyRunningTasks(Set<TaskKey> eligibleTasks ) {
+
         return eligibleTasks.stream()
                 .filter((taskKey) -> !runningTasksQueue.contains(taskKey))
-                .map(tasksMap::get)
-                .filter(task -> task != null)  //could have the Master removed?
-                .collect(Collectors.toList());
+                .map((taskKey) -> Tuple.of(taskKey, tasksMap.get(taskKey)))
+                .filter(tuple2 -> tuple2._2 != null)  //the Master could have removed the Task from the Map and that
+                .collect(Collectors.toList());        //message to arrive faster, before he sent the ACK
     }
 
     //TODO wasteful to run the query probably considering the already running tasks are
