@@ -15,9 +15,11 @@ import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.common.task.TaskKey;
 import ro.fortsoft.hztask.comparator.PriorityAndOldestTaskComparator;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -27,16 +29,15 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class TaskConsumerThread extends Thread {
 
-    /** BlockingQueue is Threadsafe **/
-    private BlockingQueue<TaskKey> runningTasksQueue;
+    /** Queue that keeps the current tasks running - so that between ack from Master that
+     * it received the finished task, we do not start processing it again on the Agent**/
+    private BlockingQueue<TaskKey> runningTasksQueue; //BlockingQueue is Threadsafe
 
     private ClusterAgentService clusterAgentService;
 
     private IMap<TaskKey, Task> tasksMap;
 
     private TaskExecutionService taskExecutionService;
-
-    private volatile boolean shuttingDown = false;
 
     private static final Logger log = LoggerFactory.getLogger(TaskConsumerThread.class);
 
@@ -54,26 +55,18 @@ public class TaskConsumerThread extends Thread {
         String localClusterId = clusterAgentService.getHzInstance().getCluster().getLocalMember().getUuid();
 
         while (true) {
-            if(shuttingDown) {
+            if(isInterrupted()) {
                 break;
             }
+
             try {
-                boolean foundTask = false;
+                Set<TaskKey> eligibleTaskKey = retrieveTasksAssignedToInstanceIdOrdered(localClusterId);
+                List<Task> eligibleTask = filterAlreadyRunningTasks(eligibleTaskKey);
 
-                Set<TaskKey> eligibleTasks = retrieveTasksAssignedToInstanceId(localClusterId);
+                log.debug("Returned {} processingNow={}", eligibleTask.size(), runningTasksQueue.size());
 
-//                log.debug("Returned " + eligibleTasks.size() + " remaining " + runningTasksQueue.remainingCapacity());
-
-                for (TaskKey taskKey : eligibleTasks) {
-                    if (!runningTasksQueue.contains(taskKey)) {
-                        Task task = tasksMap.get(taskKey);
-                        if(task != null) { //The query ran before the task was removed from the map
-                            foundTask = true;
-                            startProcessingTask(taskKey, task);
-                        }
-                    }
-                }
-                if (!foundTask) {
+                eligibleTask.stream().forEachOrdered(startProcessingTask(task));
+                if (eligibleTask.isEmpty()) {
                     log.debug("No Tasks found to process, sleeping a while...");
                     Thread.sleep(2000);
                 }
@@ -88,7 +81,17 @@ public class TaskConsumerThread extends Thread {
         log.info("TaskConsumer Thread terminated");
     }
 
-    private Set<TaskKey> retrieveTasksAssignedToInstanceId(String localClusterId) {
+    private List<Task> filterAlreadyRunningTasks(Set<TaskKey> eligibleTasks ) {
+        return eligibleTasks.stream()
+                .filter((taskKey) -> !runningTasksQueue.contains(taskKey))
+                .map(tasksMap::get)
+                .filter(task -> task != null)  //could have the Master removed?
+                .collect(Collectors.toList());
+    }
+
+    //TODO wasteful to run the query probably considering the already running tasks are
+    //not filtered out somehow
+    private Set<TaskKey> retrieveTasksAssignedToInstanceIdOrdered(String localClusterId) {
         Predicate selectPredicate = new SqlPredicate("clusterInstanceUuid=" + localClusterId);
 
         PagingPredicate pagingPredicate = new PagingPredicate(selectPredicate,
@@ -119,7 +122,6 @@ public class TaskConsumerThread extends Thread {
     }
 
     public void shutDown() {
-        shuttingDown = true;
         interrupt();
     }
 }

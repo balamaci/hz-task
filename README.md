@@ -131,6 +131,7 @@ The **Master** assigns the **Task**s to the active **Agents**, by an implementat
 ### FAQs
  
    - Q: How is it different than a **PubSub** solution through an MQ server implementation like **RabbitMQ**?
+
      A: 
       1. You don't need an external dependency, it's all java, all you need to do is import the library in your project.
       2. Master knows where each task is executing and make better decisions on where to retry the task if certain nodes begin experiencing failures for certain types of tasks or if an agent is dropped from the cluster his work can be reassigned.
@@ -139,6 +140,7 @@ The **Master** assigns the **Task**s to the active **Agents**, by an implementat
       But for sure with some extra work you could build a similar solution on top of a MQ solution. 
 
    - Q: Does Hazelcast not have already something related to running tasks on remote nodes?
+   
      A: It does, you just need to look at **IExecutorService .executeOnMember** however we chose to **focus on passing the data for the computation**, **not the computation itself**, because that would limit you to what you can do - imagine passing a computation that would need an http connection to retrieve a web page-. 
      By passing enough data for your computations on the agents you can have the libraries and frameworks of your choice on the that help solve complex scenarios.
 

@@ -5,6 +5,8 @@ import com.codahale.metrics.MetricRegistry;
 import ro.fortsoft.hztask.master.statistics.IStatisticsService;
 
 /**
+ * Implementation of StatisticsService with Codahale metrics
+ *
  * @author Serban Balamaci
  */
 public class CodahaleStatisticsService implements IStatisticsService {
