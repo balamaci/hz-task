@@ -13,12 +13,23 @@ public class TaskKey implements Serializable {
 
     private final String taskId;
 
+    /** A counter that increases for each enqued task to have an order*/
+    private long taskNo;
+
     public TaskKey(String taskId) {
         this.taskId = taskId;
     }
 
     public String getTaskId() {
         return taskId;
+    }
+
+    public long getTaskNo() {
+        return taskNo;
+    }
+
+    public void setTaskNo(long taskNo) {
+        this.taskNo = taskNo;
     }
 
     @Override

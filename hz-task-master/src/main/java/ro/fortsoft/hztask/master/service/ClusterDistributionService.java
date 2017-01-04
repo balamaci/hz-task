@@ -71,8 +71,9 @@ public class ClusterDistributionService {
      */
     public void queueTask(Task task) {
         TaskKey taskKey = new TaskKey(task.getId());
+        taskKey.setTaskNo(latestTaskCounter.getAndIncrement());
+
         task.setClusterInstanceUuid(LOCAL_MASTER_UUID);
-        task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
         log.info("Adding task={} to Map", task);
         tasks.set(taskKey, task);
@@ -84,7 +85,6 @@ public class ClusterDistributionService {
 
     private void rescheduleTask(TaskKey taskKey) {
         Task task = tasks.get(taskKey);
-        task.setInternalCounter(latestTaskCounter.getAndIncrement());
 
         String oldClusterInstanceAssignedToTask = task.getClusterInstanceUuid();
         String clusterInstanceId = getClusterInstanceToRunOn(task);

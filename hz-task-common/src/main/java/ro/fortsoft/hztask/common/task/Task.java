@@ -14,14 +14,14 @@ public abstract class Task<I, O> implements Serializable {
 
     private String clusterInstanceUuid;
 
-    private int nrOfTries;
+    private int maxNoRetries;
 
     //higher is bigger priority
     private int priority = 0;
 
     private long creationDate;
 
-    private long internalCounter;
+    private int retryCounter = 0;
 
     public Task() {
         id = UUID.randomUUID().toString();
@@ -54,12 +54,12 @@ public abstract class Task<I, O> implements Serializable {
         this.clusterInstanceUuid = clusterInstanceUuid;
     }
 
-    public int getNrOfTries() {
-        return nrOfTries;
+    public int getMaxNoRetries() {
+        return maxNoRetries;
     }
 
-    public void setNrOfTries(int nrOfTries) {
-        this.nrOfTries = nrOfTries;
+    public void setMaxNoRetries(int maxNoRetries) {
+        this.maxNoRetries = maxNoRetries;
     }
 
     public int getPriority() {
@@ -78,19 +78,19 @@ public abstract class Task<I, O> implements Serializable {
         this.creationDate = creationDate;
     }
 
-    public long getInternalCounter() {
-        return internalCounter;
+    public int getRetryCounter() {
+        return retryCounter;
     }
 
-    public void setInternalCounter(long internalCounter) {
-        this.internalCounter = internalCounter;
+    public void incrementRetryCounter() {
+        this.retryCounter++;
     }
 
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("id", id)
-                .add("nrOfTries", nrOfTries)
+                .add("retryCounter", retryCounter)
                 .add("priority", priority)
                 .add("creationDate", creationDate)
                 .toString();
