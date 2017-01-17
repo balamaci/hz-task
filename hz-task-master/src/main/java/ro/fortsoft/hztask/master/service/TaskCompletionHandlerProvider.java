@@ -1,6 +1,8 @@
 package ro.fortsoft.hztask.master.service;
 
 import com.google.common.base.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ro.fortsoft.hztask.common.task.Task;
 import ro.fortsoft.hztask.master.MasterConfig;
 import ro.fortsoft.hztask.master.handler.TaskCompletionHandler;
@@ -17,6 +19,8 @@ import java.util.concurrent.Executors;
  */
 public class TaskCompletionHandlerProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(TaskCompletionHandlerProvider.class);
+
     private MasterConfig masterConfig;
 
     /**
@@ -24,7 +28,6 @@ public class TaskCompletionHandlerProvider {
      * so that we don't block any future completed task processing we process them in a separate thread
      */
     private ExecutorService taskExecutorService = Executors.newCachedThreadPool();
-
 
     public TaskCompletionHandlerProvider(MasterConfig masterConfig) {
         this.masterConfig = masterConfig;
@@ -40,10 +43,14 @@ public class TaskCompletionHandlerProvider {
 
         final Optional<TaskCompletionHandler> finishedTaskHandler = getCompletionHandlerForTask(task);
         if (finishedTaskHandler.isPresent()) {
-            taskExecutorService.submit(new Runnable() {
+            taskExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    finishedTaskHandler.get().onSuccess(task, taskResult, agentName);
+                    try {
+                        finishedTaskHandler.get().onSuccess(task, taskResult, agentName);
+                    } catch (Throwable t) {
+                        log.error("Caught exception on handling of task {}-{}", task.getTaskName(), task.getId());
+                    }
                 }
             });
         }
@@ -58,10 +65,14 @@ public class TaskCompletionHandlerProvider {
         final String agentName = NamesUtil.toLogFormat(task.getClusterInstanceUuid());
         final Optional<TaskCompletionHandler> finishedTaskHandler = getCompletionHandlerForTask(task);
         if (finishedTaskHandler.isPresent()) {
-            taskExecutorService.submit(new Runnable() {
+            taskExecutorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    finishedTaskHandler.get().onFail(task, exception, agentName);
+                    try {
+                        finishedTaskHandler.get().onFail(task, exception, agentName);
+                    } catch (Throwable t) {
+                        log.error("Caught exception on handling of task {}-{}", task.getTaskName(), task.getId());
+                    }
                 }
             });
         }
